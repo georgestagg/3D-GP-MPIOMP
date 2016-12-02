@@ -2,7 +2,7 @@ NETCDF = /usr/local/Cellar/netcdf/4.3.3.1_5
 
 
 FC = mpif90
-FCFLAGS = -g -fopenmp -I$(NETCDF)/include
+FCFLAGS = -O3 -fopenmp -I$(NETCDF)/include
 LDFLAGS = -lm -lnetcdff -lnetcdf -L$(NETCDF)/lib
 
 PROGRAMS = gp
