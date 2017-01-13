@@ -1,4 +1,4 @@
-NETCDF = /usr/local/Cellar/netcdf/4.3.3.1_5
+NETCDF = /data/.fs/netcdf-fortran
 
 
 FC = mpif90

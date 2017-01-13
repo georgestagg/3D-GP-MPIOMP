@@ -49,9 +49,9 @@ module params
   !GLOBALS----------------------------------------------------------------------
   double precision,parameter :: PI = 4.0d0*ATAN(1.0d0)
   complex*16 :: DT,EYE = (0.0d0,1.0d0)
-  complex*16, dimension(:,:,:), ALLOCATABLE :: GRID,POT
+  complex*16, dimension(:,:,:), ALLOCATABLE :: GRID
   double precision, dimension(:), ALLOCATABLE :: GX,GY,GZ
-  double precision, dimension(:,:,:), ALLOCATABLE :: MGX,MGY,MGZ
+  double precision, dimension(:,:,:), ALLOCATABLE :: POT,MGX,MGY,MGZ
   double precision :: TIME
 
   !Parallel local grid sizes (plus ghost points for halo swapping)

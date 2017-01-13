@@ -4,7 +4,7 @@ module output
     use netcdf
     implicit none
     include 'mpif.h'
-    integer :: ncdf_id,x_id,y_id,z_id,re_id,im_id,pot_id
+    integer :: ncdf_id,x_id,y_id,z_id,re_id,im_id,pot_id,info
     integer       :: icount(3)
     integer       :: istarting(3)
     Contains
@@ -13,7 +13,11 @@ module output
         integer :: dims(3)
         integer :: r,x_dim_id,y_dim_id,z_dim_id
         character(len=*) :: fname
-        r=NF90_create(fname , IOR(nf90_netcdf4, nf90_classic_model), ncdf_id, comm=COMM_GRID, info=MPI_INFO_NULL)
+
+        call MPI_Info_create(info, IERR)
+        call MPI_Info_set(info,"IBM_largeblock_io","true", IERR)
+        
+        r=NF90_create_par(fname , IOR(nf90_netcdf4, nf90_MPIIO), COMM_GRID, MPI_INFO_NULL,ncdf_id)
         call handle_err(r)
         r=NF90_def_dim(ncdf_id, 'x_dim', NX, x_dim_id)
         r=NF90_def_dim(ncdf_id, 'y_dim', NY, y_dim_id)
@@ -31,21 +35,36 @@ module output
         r=NF90_def_var(ncdf_id, 'imag', NF90_DOUBLE, dims, im_id)
         r=NF90_def_var(ncdf_id, 'pot' , NF90_DOUBLE, dims, pot_id)
 
-        r=NF90_enddef(ncdf_id)
-        r=NF90_sync(ncdf_id)
-
+        r=nf90_var_par_access(ncdf_id, x_id, NF90_COLLECTIVE)
+        call handle_err(r)
     end subroutine
 
     subroutine write_wf_file()
         implicit none
         integer :: r,i
-        r=nf90_var_par_access(ncdf_id, x_id, NF90_COLLECTIVE)
         !Dont forget to ignore ghost points!
         istarting(1) = PSX+1
-        istarting(2) = PSY+1
-        istarting(3) = PSZ+1
-        icount(1) = PEX-PSX-2
+        icount(1) = PEX-PSX-1
+        !write(6,'(a,i4,a,i3,a,i3,a,i3,a,i3)') "Rank: ", rank, " is writing GX(", PSX+1,":",PEX-1, &
+        !    ") starting from",istarting(1),"with length",icount(1)
         r=NF90_put_var(ncdf_id, x_id, GX(PSX+1:PEX-1),istarting,icount)
+        istarting(1) = PSY+1
+        icount(1) = PEY-PSY-1
+        r=NF90_put_var(ncdf_id, y_id, GY(PSY+1:PEY-1),istarting,icount)
+        istarting(1) = PSZ+1
+        icount(1) = PEZ-PSZ-1
+        r=NF90_put_var(ncdf_id, z_id, GZ(PSZ+1:PEZ-1),istarting,icount)
+
+        istarting(1) = PSX+1
+        icount(1) = PEX-PSX-1
+        istarting(2) = PSY+1
+        icount(2) = PEY-PSY-1
+        istarting(3) = PSZ+1
+        icount(3) = PEZ-PSZ-1
+        r=NF90_put_var(ncdf_id,re_id,DBLE(GRID(PSX+1:PEX-1,PSY+1:PEY-1,PSZ+1:PEZ-1)),istarting,icount)
+        r=NF90_put_var(ncdf_id,im_id,DIMAG(GRID(PSX+1:PEX-1,PSY+1:PEY-1,PSZ+1:PEZ-1)),istarting,icount)
+        r=NF90_put_var(ncdf_id,pot_id,POT(PSX+1:PEX-1,PSY+1:PEY-1,PSZ+1:PEZ-1),istarting,icount)
+        call handle_err(r)
     end subroutine
 
     subroutine close_file()

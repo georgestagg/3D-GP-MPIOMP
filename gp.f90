@@ -11,7 +11,7 @@ program gp
 
     if(RANK .eq. 0) then
         write(6,'(a)') "---------------------------------------------------"
-        write(6,'(a)') "This is 3D-GP-MPIMP - Original code written by GWS "
+        write(6,'(a)') "This is 3D-GP-MPIMP - Written by GWS "
         write(6,'(a)') "Web: http://mas-gitlab.ncl.ac.uk/ngs54/            "
         write(6,'(a)') "---------------------------------------------------"
         write(6,'(a)') "Main parameters:"
@@ -34,6 +34,7 @@ end PROGRAM gp
 subroutine initialise
     use params
     use parallel
+    implicit none
     call init_arrays
     call setupGXYZ
     call setupMeshgrid
