@@ -11,8 +11,8 @@ module params
   double precision :: DTSIZE = 0.01d0
 
   !Dump frequency: Wavefunction - Misc
-  integer :: dumpwf = 100
-  integer :: dumputil = 100
+  integer :: DUMPWF = 100
+  integer :: DUMPUTIL = 100
 
   !GPE Type: 0 Natural Units - 1 Hamonic Oscillator Units
   integer :: RHSType = 1
@@ -45,11 +45,13 @@ module params
   !Initial condition: 0 - homg, 1 - TF, 2 - restart
   integer :: initialCondType = 0
   character(2048) :: ICRfilename
+  integer :: INITSSTEP = 0
 
   !GLOBALS----------------------------------------------------------------------
   double precision,parameter :: PI = 4.0d0*ATAN(1.0d0)
   complex*16 :: DT,EYE = (0.0d0,1.0d0)
   complex*16, dimension(:,:,:), ALLOCATABLE :: GRID
+  complex*16, dimension(:,:,:), ALLOCATABLE :: GRID_T1,GRID_T2,GRID_T3
   double precision, dimension(:), ALLOCATABLE :: GX,GY,GZ
   double precision, dimension(:,:,:), ALLOCATABLE :: POT,MGX,MGY,MGZ
   double precision :: TIME
@@ -74,5 +76,8 @@ module params
     ALLOCATE(MGX(PSX:PEX,PSY:PEY,PSZ:PEZ))
     ALLOCATE(MGY(PSX:PEX,PSY:PEY,PSZ:PEZ))
     ALLOCATE(MGZ(PSX:PEX,PSY:PEY,PSZ:PEZ))
+    ALLOCATE(GRID_T1(PSX:PEX,PSY:PEY,PSZ:PEZ))
+    ALLOCATE(GRID_T2(PSX:PEX,PSY:PEY,PSZ:PEZ))
+    ALLOCATE(GRID_T3(PSX:PEX,PSY:PEY,PSZ:PEZ))
   end subroutine
 end module

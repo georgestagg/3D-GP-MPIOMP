@@ -17,16 +17,17 @@ module parallel
 
         if(RANK .eq. 0) then
             write(6,'(a)') "---------------------------------------------------"
-            write(6,'(a)') "Init Parallel:"
-            write(6,'(a,i4,a)') "We're running on ",NNODES, ' nodes.'
+            write(6,'(a)') "Initialising parallel environment:"
+            write(6,'(a,i8,a)') "We're running on ",NNODES, ' nodes.'
         end if
 
         call MPI_BARRIER(COMM_WORLD, IERR)
+        call FLUSH()
     end subroutine
 
     subroutine setup_parallel_topology
         implicit none
-        !These are not GPE periodicity, it is the periodicity of the MPI topology
+        !These are not for setting GPE periodicity, it is the periodicity of the MPI topology
         PERIODIC(1) = .true.
         PERIODIC(2) = .true.
         PERIODIC(3) = .true.
@@ -34,11 +35,12 @@ module parallel
         call MPI_DIMS_CREATE(NNODES, 3, NODE_DIMS,IERR)
         call MPI_CART_CREATE(COMM_WORLD, 3, NODE_DIMS, PERIODIC, .true., COMM_GRID, IERR)
         if(RANK .eq. 0) then
-            write(6,'(a,i3,a,i3,a,i3,a)') "Topology is: (", NODE_DIMS(1),",", &
+            write(6,'(a,i6,a,i6,a,i6,a)') "Topology is: (", NODE_DIMS(1),",", &
                 NODE_DIMS(2),",", NODE_DIMS(3),")."
         end if
         call MPI_COMM_RANK(COMM_GRID, RANK, IERR)
         call MPI_BARRIER(COMM_GRID, IERR)
+        call FLUSH()
     end subroutine
 
     subroutine run_parallel_checks
@@ -53,10 +55,13 @@ module parallel
             end if
         !$OMP END PARALLEL
         call MPI_BARRIER(COMM_GRID, IERR)
+        call FLUSH()
     end subroutine
 
     subroutine finalize_parallel
         implicit none
+        call MPI_BARRIER(COMM_GRID, IERR)
+        call FLUSH()
         call MPI_FINALIZE(IERR)
     end subroutine
 
@@ -68,11 +73,7 @@ module parallel
         integer,intent(out) :: PSX,PEX,PSY,PEY,PSZ,PEZ
         pnx = NX/NODE_DIMS(1)
         pny = NY/NODE_DIMS(2)
-        pnz = NY/NODE_DIMS(3)
-        !if(RANK .eq. 0) then
-        !    write(6,'(a,i5,a,i5,a,i5,a)') "PNX: ", pnx,     ", PNY: ", pny    , ", PNZ: ",  pnz, "."
-        !end if
-        
+        pnz = NY/NODE_DIMS(3)     
         call MPI_CART_COORDS(COMM_GRID,RANK,3,NODE_COORDS,IERR)
 
         !Get local grid (plus ghost)
@@ -93,15 +94,9 @@ module parallel
         if (NODE_COORDS(3) .eq. NODE_DIMS(3)-1) then
             PEZ = NZ + 1
         end if
-        
-        !write(6,'(a,i4,a,i3,a,i3,a,i3,a)') "Rank: ", rank, " has coords: (", NODE_COORDS(1),",", &
-        !    NODE_COORDS(2),",", NODE_COORDS(3),")"
-        
-        write(6,'(a,i4,a,i3,a,i3,a)') "Rank: ", rank, " has PSX: ", PSX,", PEX: ",PEX,"."
-        write(6,'(a,i4,a,i3,a,i3,a)') "Rank: ", rank, " has PSY: ", PSY,", PEY: ",PEY,"."
-        write(6,'(a,i4,a,i3,a,i3,a)') "Rank: ", rank, " has PSZ: ", PSZ,", PEZ: ",PEZ,"."
-
-
+        !write(6,'(a,i4,a,i3,a,i3,a)') "Rank: ", rank, " has PSX: ", PSX,", PEX: ",PEX,"."
+        !write(6,'(a,i4,a,i3,a,i3,a)') "Rank: ", rank, " has PSY: ", PSY,", PEY: ",PEY,"."
+        !write(6,'(a,i4,a,i3,a,i3,a)') "Rank: ", rank, " has PSZ: ", PSZ,", PEZ: ",PEZ,"."
         call MPI_BARRIER(COMM_GRID, IERR)
     end subroutine
 end module

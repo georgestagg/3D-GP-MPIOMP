@@ -8,6 +8,20 @@ module output
     integer       :: icount(3)
     integer       :: istarting(3)
     Contains
+
+    subroutine dump_wavefunction (II)
+        implicit none
+        integer :: II
+        character(len=80) fname
+        write(fname, '(a,i0.6,a)') 'psi.', II/DUMPWF,".dat"
+        if(RANK .eq. 0) then
+            write(6,'(a,a)') "Writing: ", fname
+        end if
+        call make_file(fname)
+        call write_wf_file
+        call close_file
+    end subroutine
+
     subroutine make_file(fname)
         implicit none
         integer :: dims(3)
