@@ -8,7 +8,7 @@ module rhs
         !OpenMP parallelised RK4
         call halo_swap(GRID)
         call gperhs(GRID, GRID_T1,rt)
-        !$OMP parallel do private (i,j,k)
+        !$OMP parallel do private (i,j,k) collapse(3)
             do k = PSZ+1,PEZ-1
                 do j = PSY+1,PEY-1
                     do i = PSX+1,PEX-1
@@ -21,7 +21,7 @@ module rhs
 
         call halo_swap(GRID_T2)
         call gperhs(GRID_T2,GRID_T1,rt)
-        !$OMP parallel do private (i,j,k)
+        !$OMP parallel do private (i,j,k) collapse(3)
             do k = PSZ+1,PEZ-1
                 do j = PSY+1,PEY-1
                     do i = PSX+1,PEX-1
@@ -34,7 +34,7 @@ module rhs
 
         call halo_swap(GRID_T2)
         call gperhs(GRID_T2,GRID_T1,rt)
-        !$OMP parallel do private (i,j,k)
+        !$OMP parallel do private (i,j,k) collapse(3)
             do k = PSZ+1,PEZ-1
                 do j = PSY+1,PEY-1
                     do i = PSX+1,PEX-1
@@ -47,7 +47,7 @@ module rhs
 
         call halo_swap(GRID_T2)
         call gperhs(GRID_T2,GRID_T1,rt)
-        !$OMP parallel do private (i,j,k)
+        !$OMP parallel do private (i,j,k) collapse(3)
             do k = PSZ+1,PEZ-1
                 do j = PSY+1,PEY-1
                     do i = PSX+1,PEX-1
@@ -64,7 +64,7 @@ module rhs
         complex*16, dimension(PSX:PEX,PSY:PEY,PSZ:PEZ) :: gt, kk
 
         !OpenMP parallelised Homg GPE
-        !$OMP parallel do private (i,j,k)
+        !$OMP parallel do private (i,j,k) collapse(3)
             do k = PSZ+1,PEZ-1
                 do j = PSY+1,PEY-1
                     do i = PSX+1,PEX-1
@@ -82,7 +82,7 @@ module rhs
 
         !Damping
         if(dble(GAMMAC) > 0.0d0) then
-        !$OMP parallel do private (i,j,k)
+        !$OMP parallel do private (i,j,k) collapse(3)
             do k = PSZ+1,PEZ-1
                 do j = PSY+1,PEY-1
                     do i = PSX+1,PEX-1
@@ -92,7 +92,7 @@ module rhs
             end do
         !$OMP end parallel do
         else
-        !$OMP parallel do private (i,j,k)
+        !$OMP parallel do private (i,j,k) collapse(3)
             do k = PSZ+1,PEZ-1
                 do j = PSY+1,PEY-1
                     do i = PSX+1,PEX-1
