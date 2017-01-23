@@ -15,21 +15,6 @@ subroutine setupGXYZ
     end do
 end subroutine
 
-subroutine setupMeshgrid
-    use params
-    implicit none
-    integer :: i, j ,k
-    do k = PSZ,PEZ
-        do j = PSY,PEY
-            do i = PSX,PEX
-                MGX(i,j,k) = GX(i)
-                MGY(i,j,k) = GY(j)
-                MGZ(i,j,k) = GZ(k)
-            end do
-        end do
-    end do
-end subroutine
-
 subroutine initCond
     use params
     implicit none

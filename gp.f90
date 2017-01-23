@@ -43,7 +43,6 @@ subroutine initialise
     implicit none
     call init_arrays
     call setupGXYZ
-    call setupMeshgrid
     call calc_POT
     GRID = 0.0d0
     TIME = 0.0d0
@@ -60,7 +59,7 @@ subroutine simulate(steps,rt)
     double precision :: perc
 
     !Timestep
-    do i = INITSSTEP, steps
+    do i = INITSSTEP, steps-1
         if (modulo(i,DUMPUTIL) == 0) then
             if(RANK == 0) then
                 if(steps == 0) then

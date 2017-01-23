@@ -64,21 +64,39 @@ module rhs
         complex*16, dimension(PSX:PEX,PSY:PEY,PSZ:PEZ) :: gt, kk
 
         !OpenMP parallelised Homg GPE
-        !$OMP parallel do private (i,j,k) collapse(3)
-            do k = PSZ+1,PEZ-1
-                do j = PSY+1,PEY-1
-                    do i = PSX+1,PEX-1
-                        kk(i,j,k) = -0.5d0*(-6.0d0*gt(i,j,k)&
-                                    + gt(BC(i+1,0),j,k)+gt(BC(i-1,0),j,k)&
-                                    + gt(i,BC(j+1,1),k)+gt(i,BC(j-1,1),k)&
-                                    + gt(i,j,BC(k+1,2))+gt(i,j,BC(k-1,2)))/(DSPACE**2.0d0)&
-                                    + gt(i,j,k)*gt(i,j,k)*CONJG(gt(i,j,k))&
-                                    + POT(i,j,k)*gt(i,j,k) - gt(i,j,k)&
-                                    + OMEGA*EYE*(i*DSPACE*ddy(gt,i,j,k)-j*DSPACE*ddx(gt,i,j,k))
-                    end do
-                end do
-            end do
-        !$OMP end parallel do
+       !!$OMP parallel do private (i,j,k) collapse(3)
+       !    do k = PSZ+1,PEZ-1
+       !        do j = PSY+1,PEY-1
+       !            do i = PSX+1,PEX-1
+       !                kk(i,j,k) = -0.5d0*(-6.0d0*gt(i,j,k)&
+       !                            + gt(BC(i+1,0),j,k)+gt(BC(i-1,0),j,k)&
+       !                            + gt(i,BC(j+1,1),k)+gt(i,BC(j-1,1),k)&
+       !                            + gt(i,j,BC(k+1,2))+gt(i,j,BC(k-1,2)))/(DSPACE**2.0d0)&
+       !                            + gt(i,j,k)*gt(i,j,k)*CONJG(gt(i,j,k))&
+       !                            + POT(i,j,k)*gt(i,j,k) - gt(i,j,k)&
+       !                            + OMEGA*EYE*((GX(i)-(NX-1)*DSPACE/2.0d0)*ddy(gt,i,j,k)&
+       !                            - (GY(j)-(NY-1)*DSPACE/2.0d0)*ddx(gt,i,j,k))
+       !            end do
+       !        end do
+       !    end do
+       !!$OMP end parallel do
+
+       !$OMP parallel do private (i,j,k) collapse(3)
+           do k = PSZ+1,PEZ-1
+               do j = PSY+1,PEY-1
+                   do i = PSX+1,PEX-1
+                       kk(i,j,k) = -0.5d0*(-6.0d0*gt(i,j,k)&
+                                   + gt(BC(i+1,0),j,k)+gt(BC(i-1,0),j,k)&
+                                   + gt(i,BC(j+1,1),k)+gt(i,BC(j-1,1),k)&
+                                   + gt(i,j,BC(k+1,2))+gt(i,j,BC(k-1,2)))/(DSPACE**2.0d0)&
+                                   + harm_osc_C*gt(i,j,k)*gt(i,j,k)*CONJG(gt(i,j,k))&
+                                   + POT(i,j,k)*gt(i,j,k) - harm_osc_mu*gt(i,j,k)&
+                                   + OMEGA*EYE*((GX(i)-(NX-1)*DSPACE/2.0d0)*ddy(gt,i,j,k)&
+                                   - (GY(j)-(NY-1)*DSPACE/2.0d0)*ddx(gt,i,j,k))
+                   end do
+               end do
+           end do
+       !$OMP end parallel do
 
         !Damping
         if(dble(GAMMAC) > 0.0d0) then
