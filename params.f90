@@ -53,7 +53,7 @@ module params
   complex*16, dimension(:,:,:), ALLOCATABLE :: GRID
   complex*16, dimension(:,:,:), ALLOCATABLE :: GRID_T1,GRID_T2,GRID_T3
   double precision, dimension(:), ALLOCATABLE :: GX,GY,GZ
-  double precision, dimension(:,:,:), ALLOCATABLE :: POT,MGX,MGY,MGZ
+  double precision, dimension(:,:,:), ALLOCATABLE :: POT
   double precision :: TIME
 
   !Parallel local grid sizes (plus ghost points for halo swapping)
@@ -73,9 +73,6 @@ module params
     ALLOCATE(GX(PSX:PEX))
     ALLOCATE(GY(PSY:PEY))
     ALLOCATE(GZ(PSZ:PEZ))
-    ALLOCATE(MGX(PSX:PEX,PSY:PEY,PSZ:PEZ))
-    ALLOCATE(MGY(PSX:PEX,PSY:PEY,PSZ:PEZ))
-    ALLOCATE(MGZ(PSX:PEX,PSY:PEY,PSZ:PEZ))
     ALLOCATE(GRID_T1(PSX:PEX,PSY:PEY,PSZ:PEZ))
     ALLOCATE(GRID_T2(PSX:PEX,PSY:PEY,PSZ:PEZ))
     ALLOCATE(GRID_T3(PSX:PEX,PSY:PEY,PSZ:PEZ))
