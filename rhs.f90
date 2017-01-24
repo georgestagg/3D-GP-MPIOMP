@@ -85,6 +85,7 @@ module rhs
         !$OMP end parallel do
         end if
         if (RHSType .eq. 1) then
+          !OpenMP parallelised trapped GPE
         !$OMP parallel do private (i,j,k) collapse(3)
            do k = PSZ+1,PEZ-1
                do j = PSY+1,PEY-1
