@@ -19,10 +19,16 @@ program gp
         write(6,'(a,e10.3,a,e10.3,a)') "DSPACE: ", DSPACE, ", DTSIZE: ", DTSIZE, "."
         write(6,'(a,i8,a,i8,a)') "DUMPWF: ", DUMPWF, ", DUMPUTIL: ", DUMPUTIL, "."
         write(6,'(a)') "---------------------------------------------------"
+        write(6,'(a)') "Initialising system geometry..."
     end if
     call MPI_BARRIER(COMM_GRID, IERR)
-
     call initialise
+    call MPI_BARRIER(COMM_GRID, IERR)
+    if(RANK .eq. 0) then
+        write(6,'(a)') "Finished initialising!"
+        write(6,'(a)') "---------------------------------------------------"
+        write(6,'(a)') "Starting simulation..."
+    end if
     DT = -EYE*DTSIZE
     call simulate(ISTEPS,0)
     DT = DTSIZE
@@ -43,7 +49,6 @@ subroutine initialise
     implicit none
     call init_arrays
     call setupGXYZ
-    call calc_POT
     GRID = 0.0d0
     TIME = 0.0d0
     call initCond
@@ -81,6 +86,7 @@ subroutine simulate(steps,rt)
         end if
 
         call RK4_step(rt)
+        OMEGA = OMEGA + DOMEGADT*dble(DT)
         TIME = TIME + dble(DT)
         !if(potRep == 1 .and. rt == 1) then
         !    call calc_POT

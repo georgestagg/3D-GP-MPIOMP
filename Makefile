@@ -1,15 +1,15 @@
-NETCDF = /data/.fs/netcdf-fortran
+NETCDF = /data/.fs/netcdf
 
 
 FC = mpif90
-FCFLAGS = -O3 -march=native -fopenmp -I$(NETCDF)/include
-LDFLAGS = -lm -lnetcdff -lnetcdf -L$(NETCDF)/lib
+FCFLAGS = -O3 -march=native -fopenmp -I$(NETCDF)/include -I$(NETCDF)-fortran/include
+LDFLAGS = -lm -lnetcdff -lnetcdf -L$(NETCDF)/lib -L$(NETCDF)-fortran/lib
 
 PROGRAMS = gp
 
 all: $(PROGRAMS)
 
-gp: params.o parallel.o utils.o potential.o output.o rhs.o
+gp: params.o parallel.o potential.o output.o utils.o rhs.o
 
 %: %.o
 	$(FC) $(FCFLAGS) -o $@ $^ $(LDFLAGS)

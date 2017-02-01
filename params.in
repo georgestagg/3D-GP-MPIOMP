@@ -3,12 +3,12 @@ NY = 256
 NZ = 256
 DUMPWF = 100
 DUMPUTIL = 100
-ISTEPS = 10000
-ISTEPS = 200
-NSTEPS = 10
+ISTEPS = 0
+NSTEPS = 60000
 
 GAMMAC = 0.0d0
 OMEGA = 0.85d0
+DOMEGADT = -0.05d0
 RHSType = 1
 harm_osc_C = 300.0d0
 harm_osc_mu = 10.136d0
@@ -21,3 +21,8 @@ TXSCALE = 1.01d0
 TX = (NX-1)*DSPACE/2.0d0
 TY = (NY-1)*DSPACE/2.0d0
 TZ = (NZ-1)*DSPACE/2.0d0
+
+initialCondType = 2
+ICRfilename = './init.nc'
+RESUMESTEP = 30000
+RESUMETIME = 30000*DTSIZE

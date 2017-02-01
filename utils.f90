@@ -18,14 +18,23 @@ end subroutine
 subroutine initCond
     use params
     implicit none
-    GRID = 1.00d0
+
+    if(initialCondType .eq. 0) then
+        GRID = 1.00d0
+        call calc_POT
+    end if
+
+    if(initialCondType .eq. 2) then
+        call loadPreviousState
+    end if
+    
 end subroutine
 
-subroutine logger(text)
-    character(len=*),intent(in)   :: text
-    character(len=80) :: fname
-    write(fname, '(i0.4,a)') 'output.log'
-    open (8, FILE = fname, ACCESS = 'APPEND')
-        write (unit=8,fmt="(a)") text
-    close(8)
+subroutine loadPreviousState
+    use params
+    use output
+    implicit none
+    call read_wf_file(ICRfilename)
+    INITSSTEP = RESUMESTEP
+    TIME = RESUMETIME
 end subroutine

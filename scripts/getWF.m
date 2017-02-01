@@ -1,7 +1,7 @@
 function [gridx,gridy,gridz,psi,potential] = getWF(dirarg,frame)
 
 dirarg = regexprep(dirarg, '/$', '');
-datalocation = strcat(dirarg, '/psi.%06d.dat');
+datalocation = strcat(dirarg, '/psi.%06d.nc');
 fname = sprintf(datalocation,frame);
 gridx = ncread(fname,'gx');
 gridy = ncread(fname,'gy');

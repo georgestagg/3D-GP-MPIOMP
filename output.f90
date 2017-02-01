@@ -13,7 +13,7 @@ module output
         implicit none
         integer :: II
         character(len=80) fname
-        write(fname, '(a,i0.6,a)') 'psi.', II/DUMPWF,".dat"
+        write(fname, '(a,i0.6,a)') 'psi.', II/DUMPWF,".nc"
         if(RANK .eq. 0) then
             write(6,'(a,a)') "Writing: ", fname
         end if
@@ -85,6 +85,37 @@ module output
         implicit none
         integer :: r
         r=NF90_close(ncdf_id)
+    end subroutine
+
+    subroutine read_wf_file(fname)
+        implicit none
+        integer :: r,rwf_ncid,rwf_re_id,rwf_im_id,rwf_pot_id
+        double precision, dimension(PSX:PEX,PSY:PEY,PSZ:PEZ) :: realgrid,imaggrid,potgrid
+        character(len=2048) fname
+        r = NF90_open_par(fname,IOR(nf90_netcdf4,IOR(NF90_NOWRITE,nf90_MPIIO)),COMM_GRID,MPI_INFO_NULL,rwf_ncid)
+        call handle_err(r)
+
+        r = NF90_inq_varid(rwf_ncid, "real",  rwf_re_id)
+        r = NF90_inq_varid(rwf_ncid, "imag",  rwf_im_id)
+        r = NF90_inq_varid(rwf_ncid,  "pot", rwf_pot_id)
+
+        istarting(1) = PSX+1
+        icount(1) = PEX-PSX-1
+        istarting(2) = PSY+1
+        icount(2) = PEY-PSY-1
+        istarting(3) = PSZ+1
+        icount(3) = PEZ-PSZ-1
+
+        r = NF90_get_var(rwf_ncid, rwf_re_id, realgrid(PSX+1:PEX-1,PSY+1:PEY-1,PSZ+1:PEZ-1),start=istarting,count=icount)
+        r = NF90_get_var(rwf_ncid, rwf_im_id, imaggrid(PSX+1:PEX-1,PSY+1:PEY-1,PSZ+1:PEZ-1),start=istarting,count=icount)
+        r = NF90_get_var(rwf_ncid, rwf_pot_id, potgrid(PSX+1:PEX-1,PSY+1:PEY-1,PSZ+1:PEZ-1),start=istarting,count=icount)
+
+        GRID = realgrid + EYE*imaggrid
+        POT = potgrid
+        r = NF90_close(rwf_ncid)
+        if(RANK .eq. 0) then
+            write(6,*) "Reloaded a saved grid..."
+        end if
     end subroutine
 
     subroutine handle_err(status)
