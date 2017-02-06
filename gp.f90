@@ -87,6 +87,9 @@ subroutine simulate(steps,rt)
 
         call RK4_step(rt)
         OMEGA = OMEGA + DOMEGADT*dble(DT)
+        if(OMEGA < 0.0d0) then
+            OMEGA = 0.0d0
+        end if
         TIME = TIME + dble(DT)
         !if(potRep == 1 .and. rt == 1) then
         !    call calc_POT
