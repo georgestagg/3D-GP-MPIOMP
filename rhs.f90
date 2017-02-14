@@ -139,20 +139,52 @@ module rhs
         call MPI_Cart_shift(COMM_GRID,0,1,rs,rd,IERR)
         call MPI_sendrecv(kk(PEX-1,PSY:PEY,PSZ:PEZ),(PEY-PSY+1)*(PEZ-PSZ+1), MPI_DOUBLE_COMPLEX, rd,0,&
                           kk(PSX,PSY:PEY,PSZ:PEZ),(PEY-PSY+1)*(PEZ-PSZ+1),MPI_DOUBLE_COMPLEX, rs, 0, COMM_GRID,MPISTAT,IERR)
+        if(IERR .ne. MPI_SUCCESS) then
+          write(6,*) "Error running MPI_sendrecv on Rank: ", RANK, ". Error code: ",IERR
+          write(6,*) "Something has gone wrong... Quitting."
+          CALL EXIT(1)
+        end if
+
         call MPI_sendrecv(kk(PSX+1,PSY:PEY,PSZ:PEZ),(PEY-PSY+1)*(PEZ-PSZ+1), MPI_DOUBLE_COMPLEX, rs,1,&
                           kk(PEX,PSY:PEY,PSZ:PEZ),(PEY-PSY+1)*(PEZ-PSZ+1),MPI_DOUBLE_COMPLEX, rd, 1, COMM_GRID,MPISTAT,IERR)
+        if(IERR .ne. MPI_SUCCESS) then
+          write(6,*) "Error running MPI_sendrecv on Rank: ", RANK, ". Error code: ", IERR
+          write(6,*) "Something has gone wrong... Quitting."
+          CALL EXIT(1)
+        end if
+
         !Y dim - tag 2 and 3
         call MPI_Cart_shift(COMM_GRID,1,1,rs,rd,IERR)
         call MPI_sendrecv(kk(PSX:PEX,PEY-1,PSZ:PEZ),(PEX-PSX+1)*(PEZ-PSZ+1), MPI_DOUBLE_COMPLEX, rd,2,&
                           kk(PSX:PEX,PSY,PSZ:PEZ),(PEX-PSX+1)*(PEZ-PSZ+1),MPI_DOUBLE_COMPLEX, rs, 2, COMM_GRID,MPISTAT,IERR)
+        if(IERR .ne. MPI_SUCCESS) then
+          write(6,*) "Error running MPI_sendrecv on Rank: ", RANK, ". Error code: ", IERR
+          write(6,*) "Something has gone wrong... Quitting."
+          CALL EXIT(1)
+        end if
         call MPI_sendrecv(kk(PSX:PEX,PSY+1,PSZ:PEZ),(PEX-PSX+1)*(PEZ-PSZ+1), MPI_DOUBLE_COMPLEX, rs,3,&
                           kk(PSX:PEX,PEY,PSZ:PEZ),(PEX-PSX+1)*(PEZ-PSZ+1),MPI_DOUBLE_COMPLEX, rd, 3, COMM_GRID,MPISTAT,IERR)
+        if(IERR .ne. MPI_SUCCESS) then
+          write(6,*) "Error running MPI_sendrecv on Rank: ", RANK, ". Error code: ",IERR
+          write(6,*) "Something has gone wrong... Quitting."
+          CALL EXIT(1)
+        end if
         !Z dim - tag 4 and 5
         call MPI_Cart_shift(COMM_GRID,2,1,rs,rd,IERR)
         call MPI_sendrecv(kk(PSX:PEX,PSY:PEY,PEZ-1),(PEX-PSX+1)*(PEY-PSY+1), MPI_DOUBLE_COMPLEX, rd,4,&
                           kk(PSX:PEX,PSY:PEY,PSZ),(PEX-PSX+1)*(PEY-PSY+1),MPI_DOUBLE_COMPLEX, rs, 4, COMM_GRID,MPISTAT,IERR)
+        if(IERR .ne. MPI_SUCCESS) then
+          write(6,*) "Error running MPI_sendrecv on Rank: ", RANK, ". Error code: ",IERR
+          write(6,*) "Something has gone wrong... Quitting."
+          CALL EXIT(1)
+        end if
         call MPI_sendrecv(kk(PSX:PEX,PSY:PEY,PSZ+1),(PEX-PSX+1)*(PEY-PSY+1), MPI_DOUBLE_COMPLEX, rs,5,&
                           kk(PSX:PEX,PSY:PEY,PEZ),(PEX-PSX+1)*(PEY-PSY+1),MPI_DOUBLE_COMPLEX, rd, 5, COMM_GRID,MPISTAT,IERR)
+        if(IERR .ne. MPI_SUCCESS) then
+          write(6,*) "Error running MPI_sendrecv on Rank: ", RANK, ". Error code: ", IERR
+          write(6,*) "Something has gone wrong... Quitting."
+          CALL EXIT(1)
+        end if
     end subroutine
 
     COMPLEX*16 function ddx(gt,i,j,k)
@@ -168,7 +200,7 @@ module rhs
         implicit none
         integer :: i,j,k
         complex*16, dimension(PSX:PEX,PSY:PEY,PSZ:PEZ) :: gt
-        ddy = (gt(i,BC(j+1,0),k)-gt(i,BC(j-1,0),k))/(2.0d0*DSPACE)
+        ddy = (gt(i,BC(j+1,1),k)-gt(i,BC(j-1,1),k))/(2.0d0*DSPACE)
     end function
 
     COMPLEX*16 function ddz(gt,i,j,k)
@@ -176,7 +208,7 @@ module rhs
         implicit none
         complex*16, dimension(PSX:PEX,PSY:PEY,PSZ:PEZ) :: gt
         integer :: i,j,k
-        ddz = (gt(i,j,BC(k+1,0))-gt(i,j,BC(k-1,0)))/(2.0d0*DSPACE)
+        ddz = (gt(i,j,BC(k+1,2))-gt(i,j,BC(k-1,2)))/(2.0d0*DSPACE)
     end function
 
     integer function BC(s,n)
