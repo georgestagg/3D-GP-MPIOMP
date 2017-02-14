@@ -63,8 +63,8 @@ subroutine simulate(steps,rt)
     integer :: steps,rt,i
     double precision :: perc
 
-    !Timestep
     do i = INITSSTEP, steps-1
+        !Housekeeping
         if (modulo(i,DUMPUTIL) == 0) then
             if(RANK == 0) then
                 if(steps == 0) then
@@ -79,20 +79,20 @@ subroutine simulate(steps,rt)
                 end if
             end if
         end if
+
         if (modulo(i,DUMPWF) == 0) then
-            !if (rt == 1) then
+            if (rt == 1) then
                 call dump_wavefunction(i)
-            !end if
+            end if
         end if
 
-        call RK4_step(rt)
-        OMEGA = OMEGA + DOMEGADT*dble(DT)
-        if(OMEGA < 0.0d0) then
-            OMEGA = 0.0d0
+        if(recalculatePot .and. rt == 1) then
+            call calc_POT
         end if
+
+        !Time stepping routines
+        call RK4_step(rt)
+        call eulerStepOmega
         TIME = TIME + dble(DT)
-        !if(potRep == 1 .and. rt == 1) then
-        !    call calc_POT
-        !end if
     end do
 end subroutine

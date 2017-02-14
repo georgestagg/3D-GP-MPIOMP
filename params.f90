@@ -36,6 +36,7 @@ module params
 
   !Potential
   logical :: enableTrap = .true.
+  logical :: recalculatePot = .false.
   double precision :: TX=0.0d0
   double precision :: TY=0.0d0
   double precision :: TZ=0.0d0
