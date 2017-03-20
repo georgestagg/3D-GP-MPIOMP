@@ -81,9 +81,7 @@ subroutine simulate(steps,rt)
         end if
 
         if (modulo(i,DUMPWF) == 0) then
-            if (rt == 1) then
-                call dump_wavefunction(i)
-            end if
+            call dump_wavefunction(i,rt)
         end if
 
         if(recalculatePot .and. rt == 1) then

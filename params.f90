@@ -24,7 +24,7 @@ module params
   double precision :: VELY = 0.0d0
   double precision :: VELZ = 0.0d0
   double precision :: OMEGA = 0.0d0
-  double precision :: DOMEGADT = 0.005d0
+  double precision :: DOMEGADT = 0.000d0
   
   !Dissipation
   double precision :: GAMMAC = 0.0d0

@@ -1,7 +1,11 @@
-function [gridx,gridy,gridz,psi,potential] = getWF(dirarg,frame)
-
+function [gridx,gridy,gridz,psi,potential] = getWF(dirarg,frame,varargin)
+p = inputParser;
+addRequired(p,'dirarg');
+addRequired(p,'frame');
+addParameter(p,'prefix','psi');
+parse(p,dirarg,frame,varargin{:});
 dirarg = regexprep(dirarg, '/$', '');
-datalocation = strcat(dirarg, '/psi.%06d.nc');
+datalocation = strcat(dirarg, '/',p.Results.prefix,'.%06d.nc');
 fname = sprintf(datalocation,frame);
 gridx = ncread(fname,'gx');
 gridy = ncread(fname,'gy');

@@ -18,23 +18,22 @@ subroutine calc_POT
     end if
 
     !many pinning sites
-    call srand(rank)
-    do n = 1,2000
-        xp = RAND()
-        yp = RAND()
-        zp = RAND()
-        
-        !$OMP parallel do private (i,j,k) collapse(3)
-        do k = PSZ,PEZ
-            do j = PSY,PEY
-                do i = PSX,PEX
-                    POT(i,j,k) = POT(i,j,k) + 100.0d0*EXP((-(GX(i) - (PSX+xp*(PEX-PSX))*DSPACE)**2.0d0 &
-                                                           -(GY(j) - (PSY+yp*(PEY-PSY))*DSPACE)**2.0d0 &
-                                                           -(GZ(k) - (PSZ+zp*(PEZ-PSZ))*DSPACE)**2.0d0)/0.2d0**2.0d0)
-                end do
-            end do
-        end do
-        !$OMP end parallel do
-    end do
+    !do n = 1,12000
+    !    xp = RAND()
+    !    yp = RAND()
+    !    zp = RAND()
+    !    
+    !    !$OMP parallel do private (i,j,k) collapse(3)
+    !    do k = PSZ,PEZ
+    !        do j = PSY,PEY
+    !            do i = PSX,PEX
+    !                POT(i,j,k) = POT(i,j,k) + 100.0d0*EXP((-(GX(i) - (xp*NX)*DSPACE)**2.0d0 &
+    !                                                       -(GY(j) - (yp*NY)*DSPACE)**2.0d0 &
+    !                                                       -(GZ(k) - (zp*NZ)*DSPACE)**2.0d0)/0.2d0**2.0d0)
+    !            end do
+    !        end do
+    !    end do
+    !    !$OMP end parallel do
+    !end do
     
 end subroutine

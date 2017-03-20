@@ -9,11 +9,15 @@ module output
     integer       :: istarting(3)
     Contains
 
-    subroutine dump_wavefunction (II)
+    subroutine dump_wavefunction (II,rt)
         implicit none
-        integer :: II
+        integer :: II,rt
         character(len=80) fname
-        write(fname, '(a,i0.6,a)') 'psi.', II/DUMPWF,".nc"
+        if(rt .eq. 1) then
+            write(fname, '(a,i0.6,a)') 'psi.', II/DUMPWF,".nc"
+        else
+            write(fname, '(a,i0.6,a)') 'imag.', II/DUMPWF,".nc"
+        end if
         if(RANK .eq. 0) then
             write(6,'(a,a)') "Writing: ", fname
         end if
@@ -89,9 +93,50 @@ module output
 
     subroutine read_wf_file(fname)
         implicit none
-        integer :: r,rwf_ncid,rwf_re_id,rwf_im_id,rwf_pot_id
+        integer :: r,rwf_ncid,rwf_re_id,rwf_im_id,rwf_pot_id,file_status,file_age,i
         double precision, dimension(PSX:PEX,PSY:PEY,PSZ:PEZ) :: realgrid,imaggrid,potgrid
-        character(len=2048) fname
+        integer, dimension(13) :: file_stats
+        character(len=2048) fname,tmp_fname,latest_fname
+        if(RANK .eq. 0) then
+            write(6,*) "Reading saved state..."
+            if (fname .eq. 'latest') then
+                !This is weird. It's done this way because I can't find a portable way to ls the working dir.
+                write(6,*) "Finding latest file..."
+                file_age = 0
+                do i = 0, 999999 !largest filename.
+                        write(tmp_fname, '(a,i0.6,a)') 'imag.', i ,".nc"
+                        call STAT(tmp_fname, file_stats, file_status)
+                        if (file_status == 0) then !if file exists
+                            if(file_stats(10) >= file_age) then !if last modification newer than saved
+                                file_age = file_stats(10)
+                                latest_fname = tmp_fname
+                            end if
+                        end if
+                        write(tmp_fname, '(a,i0.6,a)') 'psi.', i ,".nc"
+                        call STAT(tmp_fname, file_stats, file_status)
+                        if (file_status == 0) then !if file exists
+                            if(file_stats(10) >= file_age) then !if last modification newer than saved
+                                file_age = file_stats(10)
+                                latest_fname = tmp_fname
+                            end if
+                        end if
+                end do
+                if(file_age .eq. 0) then
+                    write(6,*) "ERROR: Can't find any previous state! Quitting..."
+                    call EXIT(1)
+                else 
+                    write(6,*) "Using file: ", TRIM(latest_fname), " with modification time: ", CTIME(file_age)
+                    fname = latest_fname
+                end if
+            endif
+        end if
+
+        call MPI_Bcast(fname, 2048, MPI_CHARACTER, 0, COMM_GRID, IERR)
+
+        if(RANK .eq. 0) then
+            write(6,*) "Opening file: ", TRIM(fname)
+        end if
+
         r = NF90_open_par(fname,IOR(nf90_netcdf4,IOR(NF90_NOWRITE,nf90_MPIIO)),COMM_GRID,MPI_INFO_NULL,rwf_ncid)
         call handle_err(r)
 
@@ -114,7 +159,7 @@ module output
         POT = potgrid
         r = NF90_close(rwf_ncid)
         if(RANK .eq. 0) then
-            write(6,*) "Reloaded a saved grid..."
+            write(6,*) "Reload complete!"
         end if
     end subroutine
 
