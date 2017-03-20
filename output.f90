@@ -97,10 +97,11 @@ module output
         double precision, dimension(PSX:PEX,PSY:PEY,PSZ:PEZ) :: realgrid,imaggrid,potgrid
         integer, dimension(13) :: file_stats
         character(len=2048) fname,tmp_fname,latest_fname
+        !This next section is a bit weird.
+        !It's done this way because I can't find a portable way to ls the working dir in fortran.
         if(RANK .eq. 0) then
             write(6,*) "Reading saved state..."
             if (fname .eq. 'latest') then
-                !This is weird. It's done this way because I can't find a portable way to ls the working dir.
                 write(6,*) "Finding latest file..."
                 file_age = 0
                 do i = 0, 999999 !largest filename.
