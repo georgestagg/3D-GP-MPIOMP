@@ -37,7 +37,7 @@ program gp
     call MPI_BARRIER(COMM_GRID, IERR)
     if(RANK .eq. 0) then
         write(6,'(a)') "---------------------------------------------------"
-        write(6,'(a)') "All done!"
+        write(6,'(a)') "Simulation all done!"
         write(6,'(a)') "---------------------------------------------------"
     end if
     call finalize_parallel()

@@ -2,3 +2,5 @@
 gp
 *.dat
 *.mod
+png/*
+*.nc

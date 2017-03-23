@@ -19,11 +19,15 @@ module output
             write(fname, '(a,i0.6,a)') 'imag.', II/DUMPWF,".nc"
         end if
         if(RANK .eq. 0) then
-            write(6,'(a,a)') "Writing: ", fname
+            write(6,'(a,a)',advance="no") "Writing: ", fname
         end if
         call make_file(fname)
+        write(6,'(a)',advance="no") "."
         call write_wf_file
+        write(6,'(a)',advance="no") "."
         call close_file
+        write(6,'(a)',advance="no") "."
+        write(6,'(a)') " Done!"
     end subroutine
 
     subroutine make_file(fname)
