@@ -34,15 +34,22 @@ module params
   integer :: BCY = 1
   integer :: BCZ = 1
 
-  !Potential
-  logical :: enableTrap = .true.
+  !Potentials
   logical :: recalculatePot = .false.
+
+  logical :: enableTrap = .true.
   double precision :: TX=0.0d0
   double precision :: TY=0.0d0
   double precision :: TZ=0.0d0
   double precision :: TXSCALE = 1.0d0
   double precision :: TYSCALE = 1.0d0
   double precision :: TZSCALE = 1.0d0
+
+  logical :: enablePins = .false.
+  integer :: numPotPins = 12000
+  integer :: randSeedPins = 0
+  double precision :: pinPotDepth = 100.0d0
+  double precision :: pinSigma = 0.2d0
 
   !Initial condition: 0 - homg, 1 - TF, 2 - restart
   integer :: initialCondType = 0

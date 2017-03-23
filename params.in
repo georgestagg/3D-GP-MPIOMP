@@ -3,20 +3,19 @@ NY = 256
 NZ = 256
 DUMPWF = 1000
 DUMPUTIL = 200
-
-!ISTEPS = 300000
-ISTEPS = 0
-NSTEPS = 2000000
-!NSTEPS = 400000
-
 BCX = 0
 BCY = 0
 BCZ = 0
+
+
+ISTEPS = 0
+NSTEPS = 2000000
 
 !GAMMAC = 0.0d0
 GAMMAC = 0.5d0
 OMEGA = 0.9d0
 DOMEGADT = -0.001d0
+
 RHSType = 1
 harm_osc_C = 300.0d0
 harm_osc_mu = 10.136d0
@@ -30,7 +29,9 @@ TX = (NX-1)*DSPACE/2.0d0
 TY = (NY-1)*DSPACE/2.0d0
 TZ = (NZ-1)*DSPACE/2.0d0
 
-initialCondType = 2
-ICRfilename = 'latest'
-RESUMESTEP = 0
-RESUMETIME = 0*DTSIZE
+enablePins = .true.
+
+!initialCondType = 2
+!ICRfilename = 'latest'
+!RESUMESTEP = 0
+!RESUMETIME = 0*DTSIZE

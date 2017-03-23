@@ -2,7 +2,7 @@ function plotStarandPotpins(gridx,gridy,gridz,psi,potential)
     dens = abs(psi).^2;
     [gx,gy,gz] = meshgrid(gridx,gridy,gridz);
     holes = potential - ((gx-12.75).^2+(gy-12.75).^2+(gz-12.75).^2)/2;
-    holes(((gx-12.75).^2+(gy-12.75).^2+(1.7*(gz-12.75)).^2) > 56) = 1;
+    holes(((gx-12.75).^2+(gy-12.75).^2+(gz-12.75).^2) > 56) = 1;
     p = patch(isosurface(gridx,gridy,gridz,holes,50));
     p.EdgeColor = 'none';
     p.FaceAlpha = '1.0';
