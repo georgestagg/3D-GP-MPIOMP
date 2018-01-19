@@ -1,102 +1,83 @@
 module parallel
-    integer :: NNODES,NODE_DIMS(3),NODE_COORDS(3)
-    logical :: PERIODIC(3)
-    integer :: COMM_WORLD,COMM_GRID,RANK,IERR
-    integer, dimension(:), ALLOCATABLE :: MPISTAT
+    use parallel_3DWithGhost
+    use parallel_FFTW
+    integer :: NNODES,RANK,METHOD,MPI_WORLD,IERR
     contains
-    subroutine init_parallel
-        implicit none
-        character(len=1024) :: check_NNODES_text
-        include 'mpif.h'
 
-        ALLOCATE(MPISTAT(MPI_STATUS_SIZE))
-        COMM_WORLD = MPI_COMM_WORLD
-        call MPI_INIT(IERR)
-        call MPI_COMM_RANK(COMM_WORLD, RANK, IERR)
-        call MPI_COMM_SIZE(COMM_WORLD, NNODES, IERR)
+    character(4096) function parallel_env_name()
+        implicit none
+        if(METHOD==0) then
+            parallel_env_name = "MPI/OMP with 3D block distribution."
+        else if(METHOD==1) then
+            parallel_env_name = "MPI/OMP with 1D block distribution provided by FFTW3."
+        end if
+    end function
+
+    subroutine init_parallel(nM)
+        implicit none
+        integer :: MPI_WORLD
+        integer,intent(in) :: nM
+        include 'mpif.h'
+        METHOD = nM
+        MPI_WORLD = MPI_COMM_WORLD
+
+        if(METHOD==0) then
+            call init_parallel_3DWithGhost
+        else if(METHOD==1) then
+            call init_parallel_FFTW
+        end if
+
+        call MPI_COMM_RANK(MPI_WORLD, RANK, IERR)
+        call MPI_COMM_SIZE(MPI_WORLD, NNODES, IERR)
 
         if(RANK .eq. 0) then
             write(6,'(a)') "---------------------------------------------------"
-            write(6,'(a)') "Initialising parallel environment:"
-            write(6,'(a,i8,a)') "We're running on ",NNODES, ' nodes.'
+            write(6,'(a,a)') "Initialised parallel environment: ", TRIM(parallel_env_name())
+            write(6,'(a,i4,a)') "We're running on ",NNODES, " nodes."
         end if
-
-        call MPI_BARRIER(COMM_WORLD, IERR)
-        call FLUSH()
+        call parallel_barrier
+        call run_omp_checks
+        call setup_parallel_topology
+        
     end subroutine
 
-    subroutine setup_parallel_topology
-        implicit none
-        !These are not for setting GPE periodicity, it is the periodicity of the MPI topology
-        PERIODIC(1) = .true.
-        PERIODIC(2) = .true.
-        PERIODIC(3) = .true.
-        NODE_DIMS = 0
-        call MPI_DIMS_CREATE(NNODES, 3, NODE_DIMS,IERR)
-        call MPI_CART_CREATE(COMM_WORLD, 3, NODE_DIMS, PERIODIC, .true., COMM_GRID, IERR)
-        if(RANK .eq. 0) then
-            write(6,'(a,i6,a,i6,a,i6,a)') "Topology is: (", NODE_DIMS(1),",", &
-                NODE_DIMS(2),",", NODE_DIMS(3),")."
-        end if
-        call MPI_COMM_RANK(COMM_GRID, RANK, IERR)
-        call MPI_BARRIER(COMM_GRID, IERR)
-        call FLUSH()
-    end subroutine
-
-    subroutine run_parallel_checks
-        use omp_lib
+    subroutine run_omp_checks
         implicit none
         integer :: tid, nth
         !$OMP PARALLEL PRIVATE(tid,nth)
             nth = omp_get_num_threads()
             tid = omp_get_thread_num()
             if(tid .eq. 0) then
-                write(6, '(a,i4,a,i3,a)') 'I am rank: ',rank,', I have ',nth,' threads.'
+                write(6, '(a,i4,a,i4,a)') 'I am rank: ', RANK,', I have ',nth,' threads.'
             end if
         !$OMP END PARALLEL
-        call MPI_BARRIER(COMM_GRID, IERR)
-        call FLUSH()
     end subroutine
+
+    subroutine setup_parallel_topology
+        implicit none
+        if(METHOD==0) then
+            call setup_parallel_topology_3DWithGhost(NNODES,RANK)
+        else if(METHOD==1) then
+            call setup_parallel_topology_FFTW
+        end if
+    end subroutine
+
 
     subroutine finalize_parallel
         implicit none
-        call MPI_BARRIER(COMM_GRID, IERR)
-        call FLUSH()
-        call MPI_FINALIZE(IERR)
+        if(METHOD==0) then
+            call finalize_parallel_3DWithGhost
+        else if(METHOD==1) then
+            call finalize_parallel_FFTW
+        end if
     end subroutine
 
-    !get local grid sizes
-    subroutine calc_local_idx(NX,NY,NZ,PSX,PEX,PSY,PEY,PSZ,PEZ)
+    subroutine parallel_barrier
         implicit none
-        integer :: pnx,pny,pnz
-        integer,intent(in)  :: NX,NY,NZ
-        integer,intent(out) :: PSX,PEX,PSY,PEY,PSZ,PEZ
-        pnx = NX/NODE_DIMS(1)
-        pny = NY/NODE_DIMS(2)
-        pnz = NY/NODE_DIMS(3)     
-        call MPI_CART_COORDS(COMM_GRID,RANK,3,NODE_COORDS,IERR)
-
-        !Get local grid (plus ghost)
-        PSX = NODE_COORDS(1)*pnx
-        PEX = NODE_COORDS(1)*pnx + pnx + 1
-        PSY = NODE_COORDS(2)*pny
-        PEY = NODE_COORDS(2)*pny + pny + 1
-        PSZ = NODE_COORDS(3)*pnz
-        PEZ = NODE_COORDS(3)*pnz + pnz + 1
-
-        !Pick up lost points (plus ghost) on the end
-        if (NODE_COORDS(1) .eq. NODE_DIMS(1)-1) then
-            PEX = NX + 1
+        if(METHOD==0) then
+            call MPI_BARRIER(COMM_GRID, IERR_3DWG)
+        else if(METHOD==1) then
+            call MPI_BARRIER(MPI_WORLD, IERR)
         end if
-        if (NODE_COORDS(2) .eq. NODE_DIMS(2)-1) then
-            PEY = NY + 1
-        end if
-        if (NODE_COORDS(3) .eq. NODE_DIMS(3)-1) then
-            PEZ = NZ + 1
-        end if
-        !write(6,'(a,i4,a,i3,a,i3,a)') "Rank: ", rank, " has PSX: ", PSX,", PEX: ",PEX,"."
-        !write(6,'(a,i4,a,i3,a,i3,a)') "Rank: ", rank, " has PSY: ", PSY,", PEY: ",PEY,"."
-        !write(6,'(a,i4,a,i3,a,i3,a)') "Rank: ", rank, " has PSZ: ", PSZ,", PEZ: ",PEZ,"."
-        call MPI_BARRIER(COMM_GRID, IERR)
     end subroutine
 end module

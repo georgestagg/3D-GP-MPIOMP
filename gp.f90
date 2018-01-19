@@ -1,17 +1,13 @@
 program gp
-    use params
-    use parallel
-    use output
+    use workspace
     implicit none
     call init_params
-    call init_parallel
-    call setup_parallel_topology
-    call run_parallel_checks
-    call calc_local_idx(NX,NY,NZ,PSX,PEX,PSY,PEY,PSZ,PEZ)
+    call init_parallel(numericalMethod)
+    call parallel_barrier
 
     if(RANK .eq. 0) then
         write(6,'(a)') "---------------------------------------------------"
-        write(6,'(a)') "This is 3D-GP-MPIMP - Written by GWS "
+        write(6,'(a)') "This is 3D-GP-MPIOMP - Written by GWS "
         write(6,'(a)') "Web: http://mas-gitlab.ncl.ac.uk/ngs54/            "
         write(6,'(a)') "---------------------------------------------------"
         write(6,'(a)') "Main parameters:"
@@ -19,46 +15,39 @@ program gp
         write(6,'(a,e10.3,a,e10.3,a)') "DSPACE: ", DSPACE, ", DTSIZE: ", DTSIZE, "."
         write(6,'(a,i8,a,i8,a)') "DUMPWF: ", DUMPWF, ", DUMPUTIL: ", DUMPUTIL, "."
         write(6,'(a)') "---------------------------------------------------"
-        write(6,'(a)') "Initialising system geometry..."
+        write(6,'(a)') "Initialising system..."
     end if
-    call MPI_BARRIER(COMM_GRID, IERR)
-    call initialise
-    call MPI_BARRIER(COMM_GRID, IERR)
+    call parallel_barrier
+
+    call init_workspace
+    call initCond
+    call parallel_barrier
+    
     if(RANK .eq. 0) then
         write(6,'(a)') "Finished initialising!"
         write(6,'(a)') "---------------------------------------------------"
         write(6,'(a)') "Starting simulation..."
     end if
+    call parallel_barrier
+
     DT = -EYE*DTSIZE
     call simulate(ISTEPS,0)
     DT = DTSIZE
     call simulate(NSTEPS,1)
     
-    call MPI_BARRIER(COMM_GRID, IERR)
+    call parallel_barrier
     if(RANK .eq. 0) then
         write(6,'(a)') "---------------------------------------------------"
         write(6,'(a)') "Simulation all done!"
         write(6,'(a)') "---------------------------------------------------"
     end if
-    call finalize_parallel()
+    call finalize_parallel
 end PROGRAM gp
 
-subroutine initialise
-    use params
-    use parallel
-    implicit none
-    call init_arrays
-    call setupGXYZ
-    GRID = 0.0d0
-    TIME = 0.0d0
-    call initCond
-end subroutine
-
 subroutine simulate(steps,rt)
-    use params
-    use rhs
     use output
-    use parallel
+    use rhs_RK4
+    use rhs_FFTW
     implicit none
     integer :: steps,rt,i
     double precision :: perc
@@ -89,7 +78,11 @@ subroutine simulate(steps,rt)
         end if
 
         !Time stepping routines
-        call RK4_step(rt)
+        if(METHOD==0) then
+            call RK4_step(rt)
+        else if (METHOD==1) then
+            call FFTW_step(rt)
+        end if
         call eulerStepOmega
         TIME = TIME + dble(DT)
     end do

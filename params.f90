@@ -1,7 +1,7 @@
 module params
   !Iterations to run
   integer :: NSTEPS=10000
-  integer :: ISTEPS=2000
+  integer :: ISTEPS=0
   
   !Resolution
   integer :: NX = 64
@@ -13,6 +13,9 @@ module params
   !Dump frequency: Wavefunction - Misc
   integer :: DUMPWF = 100
   integer :: DUMPUTIL = 100
+
+  !Numerical Method: 0 RK4 - 1 FFT Step
+  integer :: numericalMethod = 0
 
   !GPE Type: 0 Natural Units - 1 Hamonic Oscillator Units
   integer :: RHSType = 1
@@ -37,7 +40,7 @@ module params
   !Potentials
   logical :: recalculatePot = .false.
 
-  logical :: enableTrap = .true.
+  logical :: enableTrap = .false.
   double precision :: TX=0.0d0
   double precision :: TY=0.0d0
   double precision :: TZ=0.0d0
@@ -61,31 +64,11 @@ module params
   !GLOBALS----------------------------------------------------------------------
   double precision,parameter :: PI = 4.0d0*ATAN(1.0d0)
   complex*16 :: DT,EYE = (0.0d0,1.0d0)
-  complex*16, dimension(:,:,:), ALLOCATABLE :: GRID
-  complex*16, dimension(:,:,:), ALLOCATABLE :: GRID_T1,GRID_T2,GRID_T3
-  double precision, dimension(:), ALLOCATABLE :: GX,GY,GZ
-  double precision, dimension(:,:,:), ALLOCATABLE :: POT
-  double precision :: TIME
-
-  !Parallel local grid sizes (plus ghost points for halo swapping)
-  integer :: PSX,PEX,PSY,PEY,PSZ,PEZ
 
   contains
-  SUBROUTINE init_params
+  subroutine init_params
     IMPLICIT NONE
     ICRfilename = repeat(" ", 2048) !Clear memory so entire string is blank
     include 'params.in'
-  END SUBROUTINE
-
-  subroutine init_arrays
-    implicit none
-    ALLOCATE(GRID(PSX:PEX,PSY:PEY,PSZ:PEZ))
-    ALLOCATE(POT(PSX:PEX,PSY:PEY,PSZ:PEZ))
-    ALLOCATE(GX(PSX:PEX))
-    ALLOCATE(GY(PSY:PEY))
-    ALLOCATE(GZ(PSZ:PEZ))
-    ALLOCATE(GRID_T1(PSX:PEX,PSY:PEY,PSZ:PEZ))
-    ALLOCATE(GRID_T2(PSX:PEX,PSY:PEY,PSZ:PEZ))
-    ALLOCATE(GRID_T3(PSX:PEX,PSY:PEY,PSZ:PEZ))
-  end subroutine
+  END subroutine
 end module

@@ -1,6 +1,5 @@
 module output
-    use params
-    use parallel
+    use workspace
     use netcdf
     implicit none
     include 'mpif.h'
@@ -73,31 +72,65 @@ module output
         call handle_err(r)
     end subroutine
 
-    subroutine write_wf_file()
+    subroutine write_wf_file
+        implicit none
+        if(METHOD==0) then
+            call write_wf_file_RK4
+        else if(METHOD==1) then
+            call write_wf_file_FFTW
+        end if
+    end subroutine
+
+    subroutine write_wf_file_RK4
         implicit none
         integer :: r,i
         !Dont forget to ignore ghost points!
-        istarting(1) = PSX+1
-        icount(1) = PEX-PSX-1
-        !write(6,'(a,i4,a,i3,a,i3,a,i3,a,i3)') "Rank: ", rank, " is writing GX(", PSX+1,":",PEX-1, &
+        istarting(1) = sx+1
+        icount(1) = ex-sx-1
+        !write(6,'(a,i4,a,i3,a,i3,a,i3,a,i3)') "Rank: ", rank, " is writing GX(", sx+1,":",ex-1, &
         !    ") starting from",istarting(1),"with length",icount(1)
-        r=NF90_put_var(ncdf_id, x_id, GX(PSX+1:PEX-1),istarting,icount)
-        istarting(1) = PSY+1
-        icount(1) = PEY-PSY-1
-        r=NF90_put_var(ncdf_id, y_id, GY(PSY+1:PEY-1),istarting,icount)
-        istarting(1) = PSZ+1
-        icount(1) = PEZ-PSZ-1
-        r=NF90_put_var(ncdf_id, z_id, GZ(PSZ+1:PEZ-1),istarting,icount)
+        r=NF90_put_var(ncdf_id, x_id, GX(sx+1:ex-1),istarting,icount)
+        istarting(1) = sy+1
+        icount(1) = ey-sy-1
+        r=NF90_put_var(ncdf_id, y_id, GY(sy+1:ey-1),istarting,icount)
+        istarting(1) = sz+1
+        icount(1) = ez-sz-1
+        r=NF90_put_var(ncdf_id, z_id, GZ(sz+1:ez-1),istarting,icount)
 
-        istarting(1) = PSX+1
-        icount(1) = PEX-PSX-1
-        istarting(2) = PSY+1
-        icount(2) = PEY-PSY-1
-        istarting(3) = PSZ+1
-        icount(3) = PEZ-PSZ-1
-        r=NF90_put_var(ncdf_id,re_id,DBLE(GRID(PSX+1:PEX-1,PSY+1:PEY-1,PSZ+1:PEZ-1)),istarting,icount)
-        r=NF90_put_var(ncdf_id,im_id,DIMAG(GRID(PSX+1:PEX-1,PSY+1:PEY-1,PSZ+1:PEZ-1)),istarting,icount)
-        r=NF90_put_var(ncdf_id,pot_id,POT(PSX+1:PEX-1,PSY+1:PEY-1,PSZ+1:PEZ-1),istarting,icount)
+        istarting(1) = sx+1
+        icount(1) = ex-sx-1
+        istarting(2) = sy+1
+        icount(2) = ey-sy-1
+        istarting(3) = sz+1
+        icount(3) = ez-sz-1
+        r=NF90_put_var(ncdf_id,re_id,DBLE(GRID(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1)),istarting,icount)
+        r=NF90_put_var(ncdf_id,im_id,DIMAG(GRID(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1)),istarting,icount)
+        r=NF90_put_var(ncdf_id,pot_id,POT(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1),istarting,icount)
+        call handle_err(r)
+    end subroutine
+
+    subroutine write_wf_file_FFTW
+        implicit none
+        integer :: r,i
+        istarting(1) = 1
+        icount(1) = NX
+        r=NF90_put_var(ncdf_id,x_id,GX,istarting,icount)
+        istarting(1) = 1
+        icount(1) = NY
+        r=NF90_put_var(ncdf_id,y_id,GY,istarting,icount)
+        istarting(1) = 1+local_k_offset
+        icount(1) = ez
+        r=NF90_put_var(ncdf_id,z_id,GZ,istarting,icount)
+
+        istarting(1) = 1
+        icount(1) = NX
+        istarting(2) = 1
+        icount(2) = NY
+        istarting(3) = 1+local_k_offset
+        icount(3) = ez
+        r=NF90_put_var(ncdf_id,re_id,DBLE(GRID),istarting,icount)
+        r=NF90_put_var(ncdf_id,im_id,DIMAG(GRID),istarting,icount)
+        r=NF90_put_var(ncdf_id,pot_id,POT,istarting,icount)
         call handle_err(r)
     end subroutine
 
@@ -107,10 +140,11 @@ module output
         r=NF90_close(ncdf_id)
     end subroutine
 
+    !TODO: FFTW form 
     subroutine read_wf_file(fname)
         implicit none
         integer :: r,rwf_ncid,rwf_re_id,rwf_im_id,rwf_pot_id,file_status,file_age,i
-        double precision, dimension(PSX:PEX,PSY:PEY,PSZ:PEZ) :: realgrid,imaggrid,potgrid
+        double precision, dimension(sx:ex,sy:ey,sz:ez) :: realgrid,imaggrid,potgrid
         integer, dimension(13) :: file_stats
         character(len=2048) fname,tmp_fname,latest_fname
         !This next section is a bit weird.
@@ -161,16 +195,16 @@ module output
         r = NF90_inq_varid(rwf_ncid, "imag",  rwf_im_id)
         r = NF90_inq_varid(rwf_ncid,  "pot", rwf_pot_id)
 
-        istarting(1) = PSX+1
-        icount(1) = PEX-PSX-1
-        istarting(2) = PSY+1
-        icount(2) = PEY-PSY-1
-        istarting(3) = PSZ+1
-        icount(3) = PEZ-PSZ-1
+        istarting(1) = sx+1
+        icount(1) = ex-sx-1
+        istarting(2) = sy+1
+        icount(2) = ey-sy-1
+        istarting(3) = sz+1
+        icount(3) = ez-sz-1
 
-        r = NF90_get_var(rwf_ncid, rwf_re_id, realgrid(PSX+1:PEX-1,PSY+1:PEY-1,PSZ+1:PEZ-1),start=istarting,count=icount)
-        r = NF90_get_var(rwf_ncid, rwf_im_id, imaggrid(PSX+1:PEX-1,PSY+1:PEY-1,PSZ+1:PEZ-1),start=istarting,count=icount)
-        r = NF90_get_var(rwf_ncid, rwf_pot_id, potgrid(PSX+1:PEX-1,PSY+1:PEY-1,PSZ+1:PEZ-1),start=istarting,count=icount)
+        r = NF90_get_var(rwf_ncid, rwf_re_id, realgrid(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1),start=istarting,count=icount)
+        r = NF90_get_var(rwf_ncid, rwf_im_id, imaggrid(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1),start=istarting,count=icount)
+        r = NF90_get_var(rwf_ncid, rwf_pot_id, potgrid(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1),start=istarting,count=icount)
 
         GRID = realgrid + EYE*imaggrid
         POT = potgrid

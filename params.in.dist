@@ -1,0 +1,18 @@
+NX = 64
+NY = 64
+NZ = 64
+
+DUMPWF = 100
+DUMPUTIL = 100
+
+BCX = 1
+BCY = 1
+BCZ = 1
+
+ISTEPS = 0
+NSTEPS = 100000
+
+RHSType = 0
+
+DSPACE = 0.5d0
+DTSIZE = 0.01d0
