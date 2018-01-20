@@ -8,8 +8,8 @@ if [ -z "$1" ]; then
 		echo "export GP3DSOURCELOC='${PWD}'" >> ~/.bashrc
 	fi
 	if [ -f ~/.bash_profile ]; then
-		echo "export PATH=\$PATH:${PWD}" >> ~/.bashrc
-		echo "export GP3DSOURCELOC='${PWD}'" >> ~/.bashrc
+		echo "export PATH=\$PATH:${PWD}" >> ~/.bash_profile
+		echo "export GP3DSOURCELOC='${PWD}'" >> ~/.bash_profile
 	fi
 	if [ -f ~/.cshrc ]; then
 		echo "set path = ( \$path ${PWD} )"  >> ~/.cshrc
