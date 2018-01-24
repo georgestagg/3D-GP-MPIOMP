@@ -2,7 +2,7 @@ program gp
     use workspace
     implicit none
     call init_params
-    call init_parallel(numericalMethod)
+    call init_parallel(RHSType)
     call parallel_barrier
 
     if(RANK .eq. 0) then
@@ -21,6 +21,7 @@ program gp
 
     call init_workspace
     call initCond
+    call calc_POT
     call parallel_barrier
     
     if(RANK .eq. 0) then

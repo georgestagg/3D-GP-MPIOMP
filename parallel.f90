@@ -13,12 +13,17 @@ module parallel
         end if
     end function
 
-    subroutine init_parallel(nM)
+    subroutine init_parallel(RHSType)
         implicit none
         integer :: MPI_WORLD
-        integer,intent(in) :: nM
+        integer,intent(in) :: RHSType
         include 'mpif.h'
-        METHOD = nM
+        if(RHSType < 2) then
+            METHOD = 0
+        else if (RHSType .eq. 2) then
+            METHOD = 1
+        end if
+
         MPI_WORLD = MPI_COMM_WORLD
 
         if(METHOD==0) then
@@ -35,6 +40,7 @@ module parallel
             write(6,'(a,a)') "Initialised parallel environment: ", TRIM(parallel_env_name())
             write(6,'(a,i4,a)') "We're running on ",NNODES, " nodes."
         end if
+        call flush
         call parallel_barrier
         call run_omp_checks
         call setup_parallel_topology

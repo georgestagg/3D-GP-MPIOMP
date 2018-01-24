@@ -3,7 +3,8 @@ module parallel_FFTW
     use, intrinsic :: iso_c_binding 
     include 'fftw3-mpi.f03'
     integer :: IERR_MPI, MPI_COMM_FFTW,COMM_FFTW_RANK
-    type(C_PTR) :: fftw_forward_plan,fftw_backward_plan, C_GRID_FFTW
+    type(C_PTR) :: fftw_forward_plan,fftw_backward_plan, fftw_forward_plan_dens,fftw_backward_plan_dens
+    type(C_PTR) :: C_GRID_FFTW, C_GRID_T1_FFTW
     integer(C_INT) :: IERR_FFTW
     integer(C_INTPTR_T) :: alloc_local,local_NZ,local_k_offset,C_NX,C_NY,C_NZ
     contains
@@ -27,27 +28,29 @@ module parallel_FFTW
         call fftw_plan_with_nthreads(omp_get_num_threads())
     end subroutine
 
-    subroutine setup_local_allocation(NX,NY,NZ,GRID)
+    subroutine setup_local_allocation(NX,NY,NZ,GRID,GRID_T1)
         implicit none
         integer,intent(in)  :: NX,NY,NZ
-        complex(C_DOUBLE_COMPLEX),intent(in), pointer :: GRID(:,:,:)
+        complex(C_DOUBLE_COMPLEX),intent(in), pointer :: GRID(:,:,:),GRID_T1(:,:,:)
         include 'mpif.h'
         C_NX = NX
         C_NY = NY
         C_NZ = NZ
         call MPI_COMM_RANK(MPI_COMM_FFTW, COMM_FFTW_RANK, IERR_MPI)
+        call MPI_BARRIER(MPI_COMM_FFTW, IERR_MPI)
         alloc_local = fftw_mpi_local_size_3d(C_NZ,C_NY,C_NX,MPI_COMM_FFTW,local_NZ,local_k_offset);
-        call MPI_BARRIER(MPI_COMM_FFTW, IERR_MPI)
-        write(6, '(a,i4,a,i6)') 'I am rank: ', COMM_FFTW_RANK,', my local NZ is: ', local_NZ
-        call MPI_BARRIER(MPI_COMM_FFTW, IERR_MPI)
-        if(COMM_FFTW_RANK==0) then
-            write(6, '(a)') 'Measuring FFT performance and selecting fastest method...'
-        end if
-        call MPI_BARRIER(MPI_COMM_FFTW, IERR_MPI)
         C_GRID_FFTW = fftw_alloc_complex(alloc_local)
         call c_f_pointer(C_GRID_FFTW, GRID, [C_NX, C_NY, local_NZ])
-        fftw_forward_plan = fftw_mpi_plan_dft_3d(C_NZ,C_NY,C_NX, GRID, GRID, MPI_COMM_FFTW, FFTW_FORWARD, FFTW_PATIENT)
-        fftw_backward_plan = fftw_mpi_plan_dft_3d(C_NZ,C_NY,C_NX, GRID, GRID, MPI_COMM_FFTW, FFTW_BACKWARD, FFTW_PATIENT)
+        C_GRID_T1_FFTW = fftw_alloc_complex(alloc_local)
+        call c_f_pointer(C_GRID_T1_FFTW, GRID_T1, [C_NX, C_NY, local_NZ])
+        if(COMM_FFTW_RANK==0) then
+            write(6, '(a,i4,a,i6)') 'FFTW memory allocation complete. Local NZ is: ', local_NZ
+            write(6, '(a)') 'Measuring FFT performance and selecting fastest method...'
+        end if
+        fftw_forward_plan = fftw_mpi_plan_dft_3d(C_NZ,C_NY,C_NX, GRID, GRID, MPI_COMM_FFTW, FFTW_FORWARD, FFTW_MEASURE)
+        fftw_backward_plan = fftw_mpi_plan_dft_3d(C_NZ,C_NY,C_NX, GRID, GRID, MPI_COMM_FFTW, FFTW_BACKWARD, FFTW_MEASURE)
+        fftw_forward_plan_dens = fftw_mpi_plan_dft_3d(C_NZ,C_NY,C_NX, GRID_T1, GRID_T1, MPI_COMM_FFTW, FFTW_FORWARD, FFTW_MEASURE)
+        fftw_backward_plan_dens = fftw_mpi_plan_dft_3d(C_NZ,C_NY,C_NX, GRID_T1, GRID_T1, MPI_COMM_FFTW, FFTW_BACKWARD, FFTW_MEASURE)
         if(COMM_FFTW_RANK==0) then
             write(6, '(a)') 'Done!'
         end if
@@ -61,6 +64,7 @@ module parallel_FFTW
         call fftw_destroy_plan(fftw_backward_plan)
         call fftw_mpi_cleanup
         call fftw_free(C_GRID_FFTW)
+        call fftw_free(C_GRID_T1_FFTW)
         call MPI_FINALIZE(IERR_MPI)
         if(present(status))then
             call exit(status)
