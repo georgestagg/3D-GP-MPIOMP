@@ -49,8 +49,9 @@ module output
 
         call MPI_Info_create(info, IERR)
         call MPI_Info_set(info,"IBM_largeblock_io","true", IERR)
+
+        r=NF90_create_par(fname , IOR(nf90_netcdf4, nf90_MPIIO), MPI_COMM, MPI_INFO_NULL,ncdf_id)
         
-        r=NF90_create_par(fname , IOR(nf90_netcdf4, nf90_MPIIO), COMM_GRID, MPI_INFO_NULL,ncdf_id)
         call handle_err(r)
         r=NF90_def_dim(ncdf_id, 'x_dim', NX, x_dim_id)
         r=NF90_def_dim(ncdf_id, 'y_dim', NY, y_dim_id)
@@ -182,13 +183,13 @@ module output
             endif
         end if
 
-        call MPI_Bcast(fname, 2048, MPI_CHARACTER, 0, COMM_GRID, IERR)
+        call MPI_Bcast(fname, 2048, MPI_CHARACTER, 0, MPI_COMM, IERR)
 
         if(RANK .eq. 0) then
             write(6,*) "Opening file: ", TRIM(fname)
         end if
 
-        r = NF90_open_par(fname,IOR(nf90_netcdf4,IOR(NF90_NOWRITE,nf90_MPIIO)),COMM_GRID,MPI_INFO_NULL,rwf_ncid)
+        r = NF90_open_par(fname,IOR(nf90_netcdf4,IOR(NF90_NOWRITE,nf90_MPIIO)),MPI_COMM,MPI_INFO_NULL,rwf_ncid)
         call handle_err(r)
 
         r = NF90_inq_varid(rwf_ncid, "real",  rwf_re_id)

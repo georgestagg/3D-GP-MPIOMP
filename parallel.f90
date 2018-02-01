@@ -1,7 +1,7 @@
 module parallel
     use parallel_3DWithGhost
     use parallel_FFTW
-    integer :: NPROCS,RANK,METHOD,MPI_WORLD,IERR
+    integer :: NPROCS,RANK,METHOD,MPI_WORLD,IERR,MPI_COMM
     contains
 
     character(4096) function parallel_env_name()
@@ -15,7 +15,6 @@ module parallel
 
     subroutine init_parallel(RHSType)
         implicit none
-        integer :: MPI_WORLD
         integer,intent(in) :: RHSType
         include 'mpif.h'
         if(RHSType < 2) then
@@ -24,16 +23,16 @@ module parallel
             METHOD = 1
         end if
 
-        MPI_WORLD = MPI_COMM_WORLD
-
         if(METHOD==0) then
             call init_parallel_3DWithGhost
+            MPI_COMM = MPI_COMM_GRID
         else if(METHOD==1) then
             call init_parallel_FFTW
+            MPI_COMM = MPI_COMM_FFTW
         end if
 
-        call MPI_COMM_RANK(MPI_WORLD, RANK, IERR)
-        call MPI_COMM_SIZE(MPI_WORLD, NPROCS, IERR)
+        call MPI_COMM_RANK(MPI_COMM_WORLD, RANK, IERR)
+        call MPI_COMM_SIZE(MPI_COMM_WORLD, NPROCS, IERR)
 
         if(RANK .eq. 0) then
             write(6,'(a)') "---------------------------------------------------"
@@ -80,10 +79,7 @@ module parallel
 
     subroutine parallel_barrier
         implicit none
-        if(METHOD==0) then
-            call MPI_BARRIER(COMM_GRID, IERR_3DWG)
-        else if(METHOD==1) then
-            call MPI_BARRIER(MPI_WORLD, IERR)
-        end if
+        call MPI_BARRIER(MPI_COMM, IERR_3DWG)
     end subroutine
+
 end module

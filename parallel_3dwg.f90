@@ -1,6 +1,6 @@
 module parallel_3DWithGhost
     use omp_lib
-    integer :: NODE_COORDS(3),NODE_DIMS(3),COMM_GRID,COMM_GRID_RANK,IERR_3DWG
+    integer :: NODE_COORDS(3),NODE_DIMS(3),MPI_COMM_GRID,COMM_GRID_RANK,IERR_3DWG
     integer, dimension(:), ALLOCATABLE :: MPISTAT
     contains
     subroutine init_parallel_3DWithGhost
@@ -22,13 +22,13 @@ module parallel_3DWithGhost
         PERIODIC(3) = .true.
         NODE_DIMS = 0
         call MPI_DIMS_CREATE(NPROCS, 3, NODE_DIMS,IERR_3DWG)
-        call MPI_CART_CREATE(MPI_COMM_WORLD, 3, NODE_DIMS, PERIODIC, .true., COMM_GRID, IERR_3DWG)
+        call MPI_CART_CREATE(MPI_COMM_WORLD, 3, NODE_DIMS, PERIODIC, .true., MPI_COMM_GRID, IERR_3DWG)
         if(RANK .eq. 0) then
             write(6,'(a,i6,a,i6,a,i6,a)') "Topology is: (", NODE_DIMS(1),",", &
                 NODE_DIMS(2),",", NODE_DIMS(3),")."
         end if
-        call MPI_COMM_RANK(COMM_GRID, COMM_GRID_RANK, IERR_3DWG)
-        call MPI_BARRIER(COMM_GRID, IERR_3DWG)
+        call MPI_COMM_RANK(MPI_COMM_GRID, COMM_GRID_RANK, IERR_3DWG)
+        call MPI_BARRIER(MPI_COMM_GRID, IERR_3DWG)
     end subroutine
 
     !get local grid sizes
@@ -40,7 +40,7 @@ module parallel_3DWithGhost
         pnx = NX/NODE_DIMS(1)
         pny = NY/NODE_DIMS(2)
         pnz = NY/NODE_DIMS(3)     
-        call MPI_CART_COORDS(COMM_GRID,COMM_GRID_RANK,3,NODE_COORDS,IERR_3DWG)
+        call MPI_CART_COORDS(MPI_COMM_GRID,COMM_GRID_RANK,3,NODE_COORDS,IERR_3DWG)
 
         !Get local grid (plus ghost)
         PSX = NODE_COORDS(1)*pnx
@@ -60,12 +60,12 @@ module parallel_3DWithGhost
         if (NODE_COORDS(3) .eq. NODE_DIMS(3)-1) then
             PEZ = NZ + 1
         end if
-        call MPI_BARRIER(COMM_GRID, IERR_3DWG)
+        call MPI_BARRIER(MPI_COMM_GRID, IERR_3DWG)
     end subroutine
 
     subroutine finalize_parallel_3DWithGhost
         implicit none
-        call MPI_BARRIER(COMM_GRID, IERR_3DWG)
+        call MPI_BARRIER(MPI_COMM_GRID, IERR_3DWG)
         call FLUSH()
         call MPI_FINALIZE(IERR_3DWG)
     end subroutine

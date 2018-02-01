@@ -135,9 +135,9 @@ module rhs_RK4
         include 'mpif.h'
 
         !X dim - tag 0 and 1
-        call MPI_Cart_shift(COMM_GRID,0,1,rs,rd,IERR)
+        call MPI_Cart_shift(MPI_COMM,0,1,rs,rd,IERR)
         call MPI_sendrecv(kk(ex-1,sy:ey,sz:ez),(ey-sy+1)*(ez-sz+1), MPI_DOUBLE_COMPLEX, rd,0,&
-                          kk(sx,sy:ey,sz:ez),(ey-sy+1)*(ez-sz+1),MPI_DOUBLE_COMPLEX, rs, 0, COMM_GRID,MPISTAT,IERR)
+                          kk(sx,sy:ey,sz:ez),(ey-sy+1)*(ez-sz+1),MPI_DOUBLE_COMPLEX, rs, 0, MPI_COMM,MPISTAT,IERR)
         if(IERR .ne. MPI_SUCCESS) then
           write(6,*) "Error running MPI_sendrecv on Rank: ", RANK, ". Error code: ",IERR
           write(6,*) "Something has gone wrong... Quitting."
@@ -145,7 +145,7 @@ module rhs_RK4
         end if
 
         call MPI_sendrecv(kk(sx+1,sy:ey,sz:ez),(ey-sy+1)*(ez-sz+1), MPI_DOUBLE_COMPLEX, rs,1,&
-                          kk(ex,sy:ey,sz:ez),(ey-sy+1)*(ez-sz+1),MPI_DOUBLE_COMPLEX, rd, 1, COMM_GRID,MPISTAT,IERR)
+                          kk(ex,sy:ey,sz:ez),(ey-sy+1)*(ez-sz+1),MPI_DOUBLE_COMPLEX, rd, 1, MPI_COMM,MPISTAT,IERR)
         if(IERR .ne. MPI_SUCCESS) then
           write(6,*) "Error running MPI_sendrecv on Rank: ", RANK, ". Error code: ", IERR
           write(6,*) "Something has gone wrong... Quitting."
@@ -153,32 +153,32 @@ module rhs_RK4
         end if
 
         !Y dim - tag 2 and 3
-        call MPI_Cart_shift(COMM_GRID,1,1,rs,rd,IERR)
+        call MPI_Cart_shift(MPI_COMM,1,1,rs,rd,IERR)
         call MPI_sendrecv(kk(sx:ex,ey-1,sz:ez),(ex-sx+1)*(ez-sz+1), MPI_DOUBLE_COMPLEX, rd,2,&
-                          kk(sx:ex,sy,sz:ez),(ex-sx+1)*(ez-sz+1),MPI_DOUBLE_COMPLEX, rs, 2, COMM_GRID,MPISTAT,IERR)
+                          kk(sx:ex,sy,sz:ez),(ex-sx+1)*(ez-sz+1),MPI_DOUBLE_COMPLEX, rs, 2, MPI_COMM,MPISTAT,IERR)
         if(IERR .ne. MPI_SUCCESS) then
           write(6,*) "Error running MPI_sendrecv on Rank: ", RANK, ". Error code: ", IERR
           write(6,*) "Something has gone wrong... Quitting."
           CALL EXIT(1)
         end if
         call MPI_sendrecv(kk(sx:ex,sy+1,sz:ez),(ex-sx+1)*(ez-sz+1), MPI_DOUBLE_COMPLEX, rs,3,&
-                          kk(sx:ex,ey,sz:ez),(ex-sx+1)*(ez-sz+1),MPI_DOUBLE_COMPLEX, rd, 3, COMM_GRID,MPISTAT,IERR)
+                          kk(sx:ex,ey,sz:ez),(ex-sx+1)*(ez-sz+1),MPI_DOUBLE_COMPLEX, rd, 3, MPI_COMM,MPISTAT,IERR)
         if(IERR .ne. MPI_SUCCESS) then
           write(6,*) "Error running MPI_sendrecv on Rank: ", RANK, ". Error code: ",IERR
           write(6,*) "Something has gone wrong... Quitting."
           CALL EXIT(1)
         end if
         !Z dim - tag 4 and 5
-        call MPI_Cart_shift(COMM_GRID,2,1,rs,rd,IERR)
+        call MPI_Cart_shift(MPI_COMM,2,1,rs,rd,IERR)
         call MPI_sendrecv(kk(sx:ex,sy:ey,ez-1),(ex-sx+1)*(ey-sy+1), MPI_DOUBLE_COMPLEX, rd,4,&
-                          kk(sx:ex,sy:ey,sz),(ex-sx+1)*(ey-sy+1),MPI_DOUBLE_COMPLEX, rs, 4, COMM_GRID,MPISTAT,IERR)
+                          kk(sx:ex,sy:ey,sz),(ex-sx+1)*(ey-sy+1),MPI_DOUBLE_COMPLEX, rs, 4, MPI_COMM,MPISTAT,IERR)
         if(IERR .ne. MPI_SUCCESS) then
           write(6,*) "Error running MPI_sendrecv on Rank: ", RANK, ". Error code: ",IERR
           write(6,*) "Something has gone wrong... Quitting."
           CALL EXIT(1)
         end if
         call MPI_sendrecv(kk(sx:ex,sy:ey,sz+1),(ex-sx+1)*(ey-sy+1), MPI_DOUBLE_COMPLEX, rs,5,&
-                          kk(sx:ex,sy:ey,ez),(ex-sx+1)*(ey-sy+1),MPI_DOUBLE_COMPLEX, rd, 5, COMM_GRID,MPISTAT,IERR)
+                          kk(sx:ex,sy:ey,ez),(ex-sx+1)*(ey-sy+1),MPI_DOUBLE_COMPLEX, rd, 5, MPI_COMM,MPISTAT,IERR)
         if(IERR .ne. MPI_SUCCESS) then
           write(6,*) "Error running MPI_sendrecv on Rank: ", RANK, ". Error code: ", IERR
           write(6,*) "Something has gone wrong... Quitting."
