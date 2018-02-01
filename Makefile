@@ -1,6 +1,6 @@
 FC = $(shell nf-config --fc)
-FCFLAGS = -O3 -march=native -fopenmp $(shell nf-config --fflags) -I/usr/include
-LDFLAGS = -lm -lfftw3_omp -lfftw3_mpi -lfftw3 $(shell nf-config --flibs)
+FCFLAGS = -O3 -march=native -fopenmp $(shell nf-config --fflags) -I$(shell mpif90 --showme:incdirs) -I/usr/include
+LDFLAGS = -lm -lfftw3_omp -lfftw3_mpi -lfftw3 $(shell nf-config --flibs) $(shell mpif90 --showme:link)
 
 PROGRAMS = gp
 
