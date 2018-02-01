@@ -1,35 +1,44 @@
-function plot3d_cutoff(gridx,gridy,gridz,psi,kc)
+function ndens = plot3d_cutoff(gridx,gridy,gridz,psi,kc,avg)
 dims = size(psi);
 Nx = dims(1);
 Ny = dims(2);
 Nz = dims(3);
-v1=fftn(psi);
-v1=v1/(sqrt(Nx*Ny*Nz));
-v1=ifftshift(v1);
-    
-kx=(-(Nx-1)/2:(Nx-1)/2);
-ky=(-(Ny-1)/2:(Ny-1)/2);
-kz=(-(Nz-1)/2:(Nz-1)/2);
-for j=1:Nx
-    for k=1:Ny
-        for l=1:Nz
-            k2=kx(j)^2+ky(k)^2+kz(l)^2;
-            v1(j,k,l)=v1(j,k,l)*max(1-k2/kc^2,0);
-        end
-    end  
-end
-v1=ifftshift(v1);
-v1=v1*(sqrt(Nx*Ny*Nz));
-u1=ifftn(v1);
-ndens=abs(u1).^2;
-[f,v] = isosurface(gridx,gridy,gridz,ndens,0.05*mean(ndens(:)));
+dx = gridx(2)-gridx(1);
+kx=(-Nx/2:(Nx/2-1));
+ky=(-Ny/2:(Ny/2-1));
+kz=(-Nz/2:(Nz/2-1));
+dens=abs(psi).^2;
+
+v1=fftshift(fftn(psi));
+[mkx,mky,mkz] = meshgrid(kx,ky,kz);
+k2=mkx.^2+mky.^2+mkz.^2;
+v1=v1.*max(1-k2./kc.^2,0);
+ndens=abs(ifftn(ifftshift(v1))).^2;
+
+[f,v] = isosurface(gridx,gridy,gridz,ndens,avg*mean(ndens(:)));
 q = patch('Faces',f,'Vertices',v);
+isonormals(gridx,gridy,gridz,ndens,q);
 q.EdgeColor = 'none';
-q.FaceAlpha = '0.5';
+q.FaceAlpha = '1.0';
 q.FaceColor = 'red';
-axis([min(gridy) max(gridy) min(gridx) max(gridx) min(gridz) max(gridz)]);
-view([-40 35])
+
+view([-50 20])
 camlight;
 lighting gouraud;
+
+hold on
+h = slice(gridx,gridy,gridz,repmat(mean(dens,2)/mean(dens(:)),[1,Nx,1]),max(gridx),[],[]);
+set(h,'edgecolor','none');
+set(h,'FaceLighting','none');
+h = slice(gridx,gridy,gridz,repmat(mean(dens,1)/mean(dens(:)),[Ny,1,1]),[],max(gridy),[]);
+set(h,'edgecolor','none');
+set(h,'FaceLighting','none');
+h = slice(gridx,gridy,gridz,repmat(mean(dens,3)/mean(dens(:)),[1,1,Nz]),[],[],min(gridz));
+set(h,'edgecolor','none');
+set(h,'FaceLighting','none');
+
+axis([min(gridy) max(gridy) min(gridx) max(gridx) min(gridz) max(gridz)]);
 daspect([1,1,1]);
+%caxis([0.5,1.7]);
+
 end

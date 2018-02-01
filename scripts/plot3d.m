@@ -1,10 +1,9 @@
-function plot3d(gridx,gridy,gridz,psi)
+function plot3d(gridx,gridy,gridz,psi,lvl)
     dens = abs(psi).^2;
-    [gx,gy,gz] = meshgrid(gridx,gridy,gridz);
-    [f,v] = isosurface(gridx,gridy,gridz,dens,0.5);
+    [f,v] = isosurface(gridx,gridy,gridz,dens,lvl);
     q = patch('Faces',f,'Vertices',v);
     q.EdgeColor = 'none';
-    q.FaceAlpha = '0.5';
+    q.FaceAlpha = '1.0';
     q.FaceColor = 'red';
     axis([min(gridy) max(gridy) min(gridx) max(gridx) min(gridz) max(gridz)]);
     view([-40 35])

@@ -14,13 +14,13 @@ module params
   integer :: DUMPWF = 100
   integer :: DUMPUTIL = 100
 
-  !GPE Type: 0 Natural Units - 1 Hamonic Oscillator Units - 2 Natural Units GPE with DDI
+  !GPE Type: 0 Natural Units - 1 Hamonic Oscillator Units - 2 Natural Units GPE with DDI (Split-step method)
   integer :: RHSType = 1
   double precision :: harm_osc_C = 300.0d0
   double precision :: harm_osc_mu = 10.136d0
   double precision :: ENERV = 0.75
   double precision :: NV = 0.75
-  double precision :: EDD = -0.5d0
+  double precision :: EDD = -0.49d0
 
   !Linearly/Rotating moving frame
   double precision :: VELX = 0.0d0

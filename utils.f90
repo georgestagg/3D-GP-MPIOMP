@@ -12,8 +12,8 @@ subroutine initCond
     do k = sz,ez
         do j = sy,ey
             do i = sx,ex
-                    GRID(i,j,k) = 1.0d0*EXP(-EYE*atan2(GY(j)-NY/2*DSPACE,GX(i)-NX/2*DSPACE-5.0))&
-                    *EXP(EYE*atan2(GY(j)-NY/2*DSPACE,GX(i)-NX/2*DSPACE+5.0))
+                    GRID(i,j,k) = 1.0d0*EXP(-EYE*atan2(GY(j)-NY/2*DSPACE,GX(i)-NX/2*DSPACE-2.0))&
+                    *EXP(EYE*atan2(GY(j)-NY/2*DSPACE,GX(i)-NX/2*DSPACE+2.0))
             end do
         end do
     end do
@@ -21,7 +21,6 @@ subroutine initCond
     else
         GRID=1.0d0
     end if
-
 end subroutine
 
 subroutine loadPreviousState
@@ -46,20 +45,26 @@ subroutine makeRandomPhase
     use workspace
     implicit none
     double precision :: rpKC, rpAMP, phi
-    integer :: i, j, k
+    integer :: i, j, k, n, ii2, jj2, kk2
+    integer, dimension(:), allocatable :: seed
+
+    call RANDOM_SEED(size = n)
+    allocate(seed(n))
+    seed = RANK
+    call RANDOM_SEED(PUT = seed)
 
     call calc_rpKC_rpAMP(rpKC, rpAMP)
     if(RANK .eq. 0) then
         write (6, *) 'Imposing the highly non-equilibrium state...'
         write (6, *) 'K-space amplitude = ', rpAMP
-        write (6, *) 'Maximum wavenumber = ', rpKC
+        write (6, *) 'Maximum wavenumber = ', sqrt(rpKC)*DKSPACE
     end if
 
    !$OMP parallel do private (i,j,k) collapse(3)
     do k = sz,ez
         do j = sy,ey
             do i = sx,ex
-                if (KX(i)**2 + KY(j)**2 + KZ(k)**2 <= rpKC*DKSPACE*DKSPACE) then
+                if (KX(i)**2+KY(j)**2+KZ(k)**2 <= rpKC*DKSPACE**2) then
                     call random_number(phi)
                     GRID(i,j,k) = rpAMP*exp(2.0*PI*EYE*phi)
                 else

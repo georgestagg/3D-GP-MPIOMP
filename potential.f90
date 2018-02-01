@@ -4,6 +4,8 @@ subroutine calc_POT
     integer :: i, j ,k, n
     double precision :: xp,yp,zp
 
+    POT=0.0d0
+
     if (enableTrap) then
        !$OMP parallel do private (i,j,k) collapse(3)
         do k = sz,ez

@@ -12,6 +12,9 @@ module workspace
 	subroutine init_workspace
 		implicit none
 
+		if(RANK .eq. 0) then
+			write(6, '(a)') "Allocating distributed workspace data"
+		end if
         if(METHOD==0) then
         	call calc_local_idx_3DWithGhost(NX,NY,NZ,sx,ex,sy,ey,sz,ez)
 			ALLOCATE(GRID_RK4(sx:ex,sy:ey,sz:ez))
@@ -21,10 +24,6 @@ module workspace
 			GRID => GRID_RK4
 			GRID_T1 => GRID_RK4_T1
 		else if (METHOD==1) then
-			if(RANK .eq. 0) then
-				write(6, '(a)') "Distributing the computational grid along z"
-			end if
-			call parallel_barrier
 			call setup_local_allocation(NX,NY,NZ,GRID,GRID_T1)
 			call parallel_barrier
 			sx = 1
@@ -44,20 +43,21 @@ module workspace
 		ALLOCATE(KY(sy:ey))
 		ALLOCATE(KZ(sz:ez))
 		if(RANK .eq. 0) then
-			write(6, '(a)') "Generating grid coordinates."
+			write(6, '(a)') "Calculating spatial and k-space coordinates"
 		end if
 		call parallel_barrier
         call setupGXYZ
         call setupKXYZ
         if (METHOD==1) then
 			if(RANK .eq. 0) then
-				write(6, '(a)') "Calculating k-space dipole-dipole potential."
+				write(6, '(a)') "Pre-calculating dipole-dipole k-space potential"
 			end if
 			call parallel_barrier
 			ALLOCATE(DDI_K(sx:ex,sy:ey,sz:ez))
         	call setupDDIK
         end if
         GRID = 0.0d0
+        GRID_T1 = 0.0d0
 		TIME = 0.0d0
 	end subroutine
 
@@ -68,7 +68,9 @@ module workspace
         do k = sz,ez
             do j = sy,ey
                 do i = sx,ex
-                    DDI_K(i,j,k) = 3.0d0*(KZ(k)**2.0d0)/(KX(i)**2.0d0+KY(j)**2.0d0+KZ(k)**2.0d0+1e-15) - 1.0d0
+                    !NOTE: This term is calculated in transposed k-space, so KY is really KZ.
+                    !NB: http://fftw.org/doc/Transposed-distributions.html#Transposed-distributions
+                    DDI_K(i,j,k) = 3.0d0*(KY(j)**2.0d0)/(KX(i)**2.0d0+KY(j)**2.0d0+KZ(k)**2.0d0+1e-20) - 1.0d0
                 end do
             end do
         end do
@@ -94,29 +96,29 @@ module workspace
 	subroutine setupKXYZ
 	    implicit none
 	    integer :: i, j ,k
-	    DKSPACE = PI/(DSPACE*NZ)
+	    DKSPACE = 2*PI/(DSPACE*NX)
 
 		do k = sz,ez
-			if ((k+local_k_offset-1) <= NX/2) then
-				KZ(k) = 2.0d0*PI*(k+local_k_offset-1)/(DSPACE*NZ)
+			if ((k+local_k_offset-1) < NZ/2) then
+				KZ(k) = 2*PI*(k+local_k_offset-1)/(DSPACE*NZ)
 			else
-				KZ(k) = 2.0d0*PI*(NZ-k-local_k_offset+1)/(DSPACE*NZ)
+				KZ(k) = -2*PI*(NZ-k-local_k_offset+1)/(DSPACE*NZ)
 			end if
-		end do		
+		end do
 
 		do j = sy,ey
-			if (j-1 <= NY/2) then
-				KY(j) = 2.0d0*PI*(j-1)/(DSPACE*NY)
+			if (j-1 < NY/2) then
+				KY(j) = 2*PI*(j-1)/(DSPACE*NY)
 			else
-				KY(j) = 2.0d0*PI*(NY-j+1)/(DSPACE*NY)
+				KY(j) = -2*PI*(NY-j+1)/(DSPACE*NY)
 			end if
 		end do
 
 		do i = sx,ex
-			if (i-1 <= NX/2) then
-				KX(i) = 2.0d0*PI*(i-1)/(DSPACE*NX)
+			if (i-1 < NX/2) then
+				KX(i) = 2*PI*(i-1)/(DSPACE*NX)
 			else
-				KX(i) = 2.0d0*PI*(NX-i+1)/(DSPACE*NX)
+				KX(i) = -2*PI*(NX-i+1)/(DSPACE*NX)
 			end if
 		end do
 

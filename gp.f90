@@ -23,6 +23,7 @@ program gp
     call initCond
     call calc_POT
     call parallel_barrier
+    call final_checks
     
     if(RANK .eq. 0) then
         write(6,'(a)') "Finished initialising!"
@@ -44,6 +45,16 @@ program gp
     end if
     call finalize_parallel
 end PROGRAM gp
+
+subroutine final_checks
+    use output
+    use rhs_RK4
+    use rhs_FFTW
+    implicit none
+    if (METHOD==1) then
+        call run_checks_FFTW
+    end if
+end subroutine
 
 subroutine simulate(steps,rt)
     use output

@@ -31,7 +31,7 @@ module parallel_FFTW
     subroutine setup_local_allocation(NX,NY,NZ,GRID,GRID_T1)
         implicit none
         integer,intent(in)  :: NX,NY,NZ
-        complex(C_DOUBLE_COMPLEX),intent(in), pointer :: GRID(:,:,:),GRID_T1(:,:,:)
+        complex(C_DOUBLE_COMPLEX),intent(out), pointer :: GRID(:,:,:),GRID_T1(:,:,:)
         include 'mpif.h'
         C_NX = NX
         C_NY = NY
@@ -39,18 +39,25 @@ module parallel_FFTW
         call MPI_COMM_RANK(MPI_COMM_FFTW, COMM_FFTW_RANK, IERR_MPI)
         call MPI_BARRIER(MPI_COMM_FFTW, IERR_MPI)
         alloc_local = fftw_mpi_local_size_3d(C_NZ,C_NY,C_NX,MPI_COMM_FFTW,local_NZ,local_k_offset);
+
         C_GRID_FFTW = fftw_alloc_complex(alloc_local)
         call c_f_pointer(C_GRID_FFTW, GRID, [C_NX, C_NY, local_NZ])
+
         C_GRID_T1_FFTW = fftw_alloc_complex(alloc_local)
         call c_f_pointer(C_GRID_T1_FFTW, GRID_T1, [C_NX, C_NY, local_NZ])
+
         if(COMM_FFTW_RANK==0) then
             write(6, '(a,i4,a,i6)') 'FFTW memory allocation complete. Local NZ is: ', local_NZ
             write(6, '(a)') 'Measuring FFT performance and selecting fastest method...'
         end if
-        fftw_forward_plan = fftw_mpi_plan_dft_3d(C_NZ,C_NY,C_NX, GRID, GRID, MPI_COMM_FFTW, FFTW_FORWARD, FFTW_MEASURE)
-        fftw_backward_plan = fftw_mpi_plan_dft_3d(C_NZ,C_NY,C_NX, GRID, GRID, MPI_COMM_FFTW, FFTW_BACKWARD, FFTW_MEASURE)
-        fftw_forward_plan_dens = fftw_mpi_plan_dft_3d(C_NZ,C_NY,C_NX, GRID_T1, GRID_T1, MPI_COMM_FFTW, FFTW_FORWARD, FFTW_MEASURE)
-        fftw_backward_plan_dens = fftw_mpi_plan_dft_3d(C_NZ,C_NY,C_NX, GRID_T1, GRID_T1, MPI_COMM_FFTW, FFTW_BACKWARD, FFTW_MEASURE)
+        fftw_forward_plan = fftw_mpi_plan_dft_3d(C_NZ,C_NY,C_NX, GRID, GRID, &
+                                                 MPI_COMM_FFTW, FFTW_FORWARD, FFTW_MPI_TRANSPOSED_OUT)
+        fftw_backward_plan = fftw_mpi_plan_dft_3d(C_NZ,C_NY,C_NX, GRID, GRID, &
+                                                  MPI_COMM_FFTW, FFTW_BACKWARD, FFTW_MPI_TRANSPOSED_IN)
+        fftw_forward_plan_dens = fftw_mpi_plan_dft_3d(C_NZ,C_NY,C_NX, GRID_T1, GRID_T1, &
+                                                      MPI_COMM_FFTW, FFTW_FORWARD, FFTW_MPI_TRANSPOSED_OUT)
+        fftw_backward_plan_dens = fftw_mpi_plan_dft_3d(C_NZ,C_NY,C_NX, GRID_T1, GRID_T1, &
+                                                       MPI_COMM_FFTW, FFTW_BACKWARD, FFTW_MPI_TRANSPOSED_IN)
         if(COMM_FFTW_RANK==0) then
             write(6, '(a)') 'Done!'
         end if
