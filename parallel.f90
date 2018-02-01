@@ -1,7 +1,7 @@
 module parallel
     use parallel_3DWithGhost
     use parallel_FFTW
-    integer :: NPROCS,RANK,METHOD,MPI_WORLD,IERR,MPI_COMM
+    integer :: NPROCS,RANK,METHOD,MPI_WORLD,IERR,MPI_COMM,MPI_C_COMM
     contains
 
     character(4096) function parallel_env_name()
@@ -30,6 +30,8 @@ module parallel
             call init_parallel_FFTW
             MPI_COMM = MPI_COMM_FFTW
         end if
+
+        MPI_C_COMM = MPI_Comm_f2c(MPI_COMM);
 
         call MPI_COMM_RANK(MPI_COMM_WORLD, RANK, IERR)
         call MPI_COMM_SIZE(MPI_COMM_WORLD, NPROCS, IERR)
