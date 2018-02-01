@@ -1,9 +1,6 @@
-NETCDF = /data/.fs/netcdf
-
-
-FC = mpif90
-FCFLAGS = -O3 -march=native -fopenmp -I$(NETCDF)/include -I$(NETCDF)-fortran/include -I/usr/include
-LDFLAGS = -lm -lfftw3_omp -lfftw3_mpi -lfftw3 -lnetcdff -lnetcdf -L$(NETCDF)/lib -L$(NETCDF)-fortran/lib
+FC = $(shell nf-config --fc)
+FCFLAGS = -O3 -march=native -fopenmp $(shell nf-config --fflags) -I/usr/include
+LDFLAGS = -lm -lfftw3_omp -lfftw3_mpi -lfftw3 $(shell nf-config --flibs)
 
 PROGRAMS = gp
 

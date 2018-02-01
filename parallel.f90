@@ -1,7 +1,7 @@
 module parallel
     use parallel_3DWithGhost
     use parallel_FFTW
-    integer :: NNODES,RANK,METHOD,MPI_WORLD,IERR
+    integer :: NPROCS,RANK,METHOD,MPI_WORLD,IERR
     contains
 
     character(4096) function parallel_env_name()
@@ -33,12 +33,12 @@ module parallel
         end if
 
         call MPI_COMM_RANK(MPI_WORLD, RANK, IERR)
-        call MPI_COMM_SIZE(MPI_WORLD, NNODES, IERR)
+        call MPI_COMM_SIZE(MPI_WORLD, NPROCS, IERR)
 
         if(RANK .eq. 0) then
             write(6,'(a)') "---------------------------------------------------"
             write(6,'(a,a)') "Initialised parallel environment: ", TRIM(parallel_env_name())
-            write(6,'(a,i4,a)') "We're running on ",NNODES, " nodes."
+            write(6,'(a,i4,a)') "We're running ",NPROCS, " processes."
         end if
         call flush
         call parallel_barrier
@@ -62,7 +62,7 @@ module parallel
     subroutine setup_parallel_topology
         implicit none
         if(METHOD==0) then
-            call setup_parallel_topology_3DWithGhost(NNODES,RANK)
+            call setup_parallel_topology_3DWithGhost(NPROCS,RANK)
         else if(METHOD==1) then
             call setup_parallel_topology_FFTW
         end if

@@ -11,17 +11,17 @@ module parallel_3DWithGhost
         call MPI_BARRIER(MPI_COMM_WORLD, IERR_3DWG)
     end subroutine
 
-    subroutine setup_parallel_topology_3DWithGhost(NNODES,RANK)
+    subroutine setup_parallel_topology_3DWithGhost(NPROCS,RANK)
         implicit none
         include 'mpif.h'
-        integer,intent(in) :: NNODES,RANK
+        integer,intent(in) :: NPROCS,RANK
         logical :: PERIODIC(3)
         !These are not for setting GPE periodicity, it is the periodicity of the MPI topology
         PERIODIC(1) = .true.
         PERIODIC(2) = .true.
         PERIODIC(3) = .true.
         NODE_DIMS = 0
-        call MPI_DIMS_CREATE(NNODES, 3, NODE_DIMS,IERR_3DWG)
+        call MPI_DIMS_CREATE(NPROCS, 3, NODE_DIMS,IERR_3DWG)
         call MPI_CART_CREATE(MPI_COMM_WORLD, 3, NODE_DIMS, PERIODIC, .true., COMM_GRID, IERR_3DWG)
         if(RANK .eq. 0) then
             write(6,'(a,i6,a,i6,a,i6,a)') "Topology is: (", NODE_DIMS(1),",", &
