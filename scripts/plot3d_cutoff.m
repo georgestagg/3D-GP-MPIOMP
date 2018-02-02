@@ -22,7 +22,7 @@ q.EdgeColor = 'none';
 q.FaceAlpha = '1.0';
 q.FaceColor = 'red';
 
-view([-50 20])
+view([-55 18])
 camlight;
 lighting gouraud;
 
