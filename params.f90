@@ -58,8 +58,6 @@ module params
   integer :: initialCondType = 0
   character(2048) :: ICRfilename
   integer :: INITSSTEP = 0
-  integer :: RESUMESTEP = 0
-  double precision :: RESUMETIME = 0
 
   !GLOBALS----------------------------------------------------------------------
   double precision,parameter :: PI = 4.0d0*ATAN(1.0d0)

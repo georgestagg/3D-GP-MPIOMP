@@ -4,7 +4,7 @@ module workspace
     complex*16, dimension(:,:,:), ALLOCATABLE, TARGET :: GRID_RK4,GRID_RK4_T1
 	complex*16, dimension(:,:,:), ALLOCATABLE :: GRID_T2,GRID_T3,DDI_K
 	double precision, dimension(:), ALLOCATABLE :: GX,GY,GZ,KX,KY,KZ
-	integer :: sx,sy,sz,ex,ey,ez
+	integer :: sx,sy,sz,ex,ey,ez,cur_step
 	double precision, dimension(:,:,:), ALLOCATABLE :: POT
 	complex(C_DOUBLE_COMPLEX), pointer :: GRID(:,:,:),GRID_T1(:,:,:)
 	double precision :: TIME,DKSPACE,EDD_T1,EDD_T2

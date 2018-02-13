@@ -28,8 +28,6 @@ subroutine loadPreviousState
     use output
     implicit none
     call read_wf_file(ICRfilename)
-    INITSSTEP = RESUMESTEP
-    TIME = RESUMETIME
 end subroutine
 
 subroutine eulerStepOmega
@@ -45,7 +43,7 @@ subroutine makeRandomPhase
     use workspace
     implicit none
     double precision :: rpKC, rpAMP, phi
-    integer :: i, j, k, n, ii2, jj2, kk2
+    integer :: i, j, k, n
     integer, dimension(:), allocatable :: seed
 
     call RANDOM_SEED(size = n)

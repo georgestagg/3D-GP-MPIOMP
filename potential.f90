@@ -1,8 +1,7 @@
 subroutine calc_POT
     use workspace
     implicit none
-    integer :: i, j ,k, n
-    double precision :: xp,yp,zp
+    integer :: i, j ,k
 
     POT=0.0d0
 

@@ -1,4 +1,4 @@
-function [totalE,kinE,potE,interE] = gpe3denergy(gridx,gridy,gridz,psi,pot)
+function [totalE,kinE,potE,interE] = calcEnergy(gridx,gridy,gridz,psi,pot)
 dx=gridx(2)-gridx(1);
 dy=gridy(2)-gridy(1);
 dz=gridz(2)-gridz(1);

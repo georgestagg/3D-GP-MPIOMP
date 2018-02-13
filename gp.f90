@@ -61,17 +61,17 @@ subroutine simulate(steps,rt)
     use rhs_RK4
     use rhs_FFTW
     implicit none
-    integer :: steps,rt,i
+    integer :: steps,rt
     double precision :: perc
 
-    do i = INITSSTEP, steps-1
+    do cur_step = INITSSTEP, steps-1
         !Housekeeping
-        if (modulo(i,DUMPUTIL) == 0) then
+        if (modulo(cur_step,DUMPUTIL) == 0) then
             if(RANK == 0) then
                 if(steps == 0) then
                     perc = 100
                 else
-                    perc = dble(i)/steps*100.0d0
+                    perc = dble(cur_step)/steps*100.0d0
                 end if
                 if (rt == 1) then
                     write (6,fmt="(a,f6.2,a)") "Simulating: ",perc,"%"
@@ -81,8 +81,8 @@ subroutine simulate(steps,rt)
             end if
         end if
 
-        if (modulo(i,DUMPWF) == 0) then
-            call dump_wavefunction(i,rt)
+        if (modulo(cur_step,DUMPWF) == 0) then
+            call dump_wavefunction(cur_step,rt)
         end if
 
         if(recalculatePot .and. rt == 1) then

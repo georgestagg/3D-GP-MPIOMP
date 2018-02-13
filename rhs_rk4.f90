@@ -3,7 +3,7 @@ module rhs_RK4
 	contains
     subroutine RK4_step(rt)
         implicit none
-        integer :: rt,BC,i,j,k
+        integer :: rt,i,j,k
         !OpenMP parallelised RK4
         call halo_swap(GRID)
         call RK4_gperhs(GRID, GRID_T1,rt)
