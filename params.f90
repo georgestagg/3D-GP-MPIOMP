@@ -18,9 +18,9 @@ module params
   integer :: RHSType = 1
   double precision :: harm_osc_C = 300.0d0
   double precision :: harm_osc_mu = 10.136d0
-  double precision :: ENERV = 0.75
-  double precision :: NV = 0.75
-  double precision :: EDD = -0.49d0
+  double precision :: ENERV = 0.75d0
+  double precision :: NV = 0.75d0
+  double precision :: EDD = 0.0d0
 
   !Linearly/Rotating moving frame
   double precision :: VELX = 0.0d0
@@ -41,6 +41,20 @@ module params
   logical :: recalculatePot = .false.
 
   logical :: enableTrap = .false.
+  logical :: enablePot = .false.
+  integer :: potType = 0
+  integer :: trapType = 0
+
+  double precision :: OBJHEIGHT = 0.0d0
+  double precision :: OBJX = 0.0d0
+  double precision :: OBJY = 0.0d0
+  double precision :: OBJZ = 0.0d0
+  double precision :: OBJXSCALE = 2.0d0
+  double precision :: OBJYSCALE = 2.0d0
+  double precision :: OBJZSCALE = 2.0d0
+
+  double precision :: TRAPHEIGHT = 0.0d0
+  double precision :: TRAPR = 0.0d0
   double precision :: TX=0.0d0
   double precision :: TY=0.0d0
   double precision :: TZ=0.0d0
@@ -48,13 +62,6 @@ module params
   double precision :: TYSCALE = 1.0d0
   double precision :: TZSCALE = 1.0d0
 
-  logical :: enablePins = .false.
-  integer :: numPotPins = 12000
-  integer :: randSeedPins = 0
-  double precision :: pinPotDepth = 100.0d0
-  double precision :: pinSigma = 0.2d0
-
-  !Initial condition: 0 - homg, 1 - TF, 2 - restart
   integer :: initialCondType = 0
   character(2048) :: ICRfilename
   integer :: INITSSTEP = 0

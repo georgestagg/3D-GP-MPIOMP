@@ -33,7 +33,9 @@ program gp
     call parallel_barrier
 
     DT = -EYE*DTSIZE
-    call simulate(ISTEPS,0)
+    if(ISTEPS > 0 .and. TIME < 1e-14) then
+        call simulate(ISTEPS,0)
+    end if
     DT = DTSIZE
     call simulate(NSTEPS,1)
     
@@ -95,7 +97,9 @@ subroutine simulate(steps,rt)
         else if (METHOD==1) then
             call FFTW_step(rt)
         end if
-        call eulerStepOmega
+        if(ABS(DOMEGADT) > 1e-14) then
+            call eulerStepOmega
+        end if
         TIME = TIME + dble(DT)
     end do
 end subroutine

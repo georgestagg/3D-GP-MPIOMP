@@ -1,5 +1,6 @@
 subroutine initCond
     use workspace
+    use output
     implicit none
     integer :: i, j ,k
 
@@ -18,16 +19,11 @@ subroutine initCond
         end do
     end do
     !$OMP end parallel do
+    else if (initialCondType .eq. 3) then
+        call read_wf_file(ICRfilename)
     else
         GRID=1.0d0
     end if
-end subroutine
-
-subroutine loadPreviousState
-    use params
-    use output
-    implicit none
-    call read_wf_file(ICRfilename)
 end subroutine
 
 subroutine eulerStepOmega

@@ -157,6 +157,10 @@ module output
         call handle_err(r)
         r=NF90_put_var(ncdf_id,pot_id,POT,istarting,icount)
         call handle_err(r)
+        r=NF90_put_var(ncdf_id,step_id,cur_step)
+        call handle_err(r)
+        r=NF90_put_var(ncdf_id,time_id,TIME)
+        call handle_err(r)
     end subroutine
 
     subroutine close_file()
@@ -177,7 +181,7 @@ module output
 
     subroutine read_wf_file_RK4(fname)
         implicit none
-        integer :: rwf_ncid,rwf_re_id,rwf_im_id,rwf_pot_id
+        integer :: rwf_ncid,rwf_re_id,rwf_im_id,rwf_pot_id,rwf_step_id,rwf_time_id
         double precision, dimension(sx:ex,sy:ey,sz:ez) :: realgrid,imaggrid,potgrid
         character(len=2048) fname
         if(RANK .eq. 0) then
@@ -194,6 +198,10 @@ module output
         call handle_err(r)
         r = NF90_inq_varid(rwf_ncid,  "pot", rwf_pot_id)
         call handle_err(r)
+        r = NF90_inq_varid(rwf_ncid, "step",  rwf_step_id)
+        call handle_err(r)
+        r = NF90_inq_varid(rwf_ncid,  "time", rwf_time_id)
+        call handle_err(r)
 
         istarting(1) = sx+1
         icount(1) = ex-sx-1
@@ -207,9 +215,9 @@ module output
         call handle_err(r)
         r = NF90_get_var(rwf_ncid, rwf_pot_id, potgrid(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1),start=istarting,count=icount)
         call handle_err(r)
-        r=NF90_put_var(ncdf_id,step_id,INITSSTEP)
+        r=NF90_get_var(rwf_ncid,rwf_step_id,INITSSTEP)
         call handle_err(r)
-        r=NF90_put_var(ncdf_id,time_id,TIME)
+        r=NF90_get_var(rwf_ncid,rwf_time_id,TIME)
         call handle_err(r)
 
         GRID = realgrid + EYE*imaggrid
@@ -225,7 +233,7 @@ module output
     
     subroutine read_wf_file_FFTW(fname)
         implicit none
-        integer :: rwf_ncid,rwf_re_id,rwf_im_id,rwf_pot_id
+        integer :: rwf_ncid,rwf_re_id,rwf_im_id,rwf_pot_id,rwf_step_id,rwf_time_id
         double precision, dimension(sx:ex,sy:ey,sz:ez) :: realgrid,imaggrid,potgrid
         character(len=2048) fname
         if(RANK .eq. 0) then
@@ -242,6 +250,10 @@ module output
         call handle_err(r)
         r = NF90_inq_varid(rwf_ncid,  "pot", rwf_pot_id)
         call handle_err(r)
+        r = NF90_inq_varid(rwf_ncid, "step",  rwf_step_id)
+        call handle_err(r)
+        r = NF90_inq_varid(rwf_ncid, "time", rwf_time_id)
+        call handle_err(r)
 
         istarting(1) = 1
         icount(1) = NX
@@ -255,9 +267,9 @@ module output
         call handle_err(r)
         r = NF90_get_var(rwf_ncid, rwf_pot_id, potgrid,start=istarting,count=icount)
         call handle_err(r)
-        r=NF90_put_var(ncdf_id,step_id,INITSSTEP)
+        r=NF90_get_var(rwf_ncid,rwf_step_id,INITSSTEP)
         call handle_err(r)
-        r=NF90_put_var(ncdf_id,time_id,TIME)
+        r=NF90_get_var(rwf_ncid,rwf_time_id,TIME)
         call handle_err(r)
 
         GRID = realgrid + EYE*imaggrid
@@ -268,6 +280,7 @@ module output
 
         if(RANK .eq. 0) then
             write(6,*) "Reload complete!"
+            write(6,fmt="(a,i8,a,f10.3)") "Resuming simulation from step number: ",INITSSTEP, ", at time: ", TIME
         end if
     end subroutine
 

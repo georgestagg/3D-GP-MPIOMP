@@ -19,6 +19,20 @@ module rhs_FFTW
             	call exit(1)
             end if
 		end if
+		if(GAMMAC > 0.0d0) then
+			if(RANK .eq. 0) then
+				write(6,'(a)') "Warning: The dissipative GPE is not supported using the split-step fourier method."
+				write(6,'(a)') "Forcing GAMMAC=0.0d0"
+				GAMMAC = 0.0d0
+            end if
+		end if
+		if(OMEGA > 0.0d0) then
+			if(RANK .eq. 0) then
+				write(6,'(a)') "Warning: A rotating frame is not yet supported using the split-step fourier method."
+				write(6,'(a)') "Forcing OMEGA=0.0d0"
+				OMEGA = 0.0d0
+            end if
+		end if
 	end subroutine
 
 	subroutine FFTW_step(rt)

@@ -8,4 +8,4 @@ module load FFTW/3.3.6-gompi-2017b
 export OMP_NUM_THREADS=1
 export LD_LIBRARY_PATH="$(nc-config --prefix)/lib:$(nc-config --prefix)/lib64:$(nf-config --prefix)/lib:$(nf-config --prefix)/lib64:$LD_LIBRARY_PATH"
 
-mpirun ./gp
+mpirun -x OMP_NUM_THREADS=$NUM_THREADS ./gp

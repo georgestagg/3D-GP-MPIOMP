@@ -51,7 +51,7 @@ module workspace
         if (METHOD==1) then
 			if(RANK .eq. 0) then
 				write(6, '(a)') "Pre-calculating dipole-dipole k-space potential"
-				write(6, '(a,e10.3)') "EDD is: ", EDD
+				write(6, '(a,f6.3)') "EDD is: ", EDD
 			end if
 			call parallel_barrier
 			ALLOCATE(DDI_K(sx:ex,sy:ey,sz:ez))
