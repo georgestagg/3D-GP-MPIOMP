@@ -48,9 +48,10 @@ module output
         character(len=*) :: fname
 
         call MPI_Info_create(info, IERR)
-        call MPI_Info_set(info,"IBM_largeblock_io","true", IERR)
+        call mpi_info_set(info, "romio_ds_write", "disable", ierr)
+        call mpi_info_set(info, "romio_ds_read", "disable", ierr)
 
-        r=NF90_create_par(fname , IOR(nf90_netcdf4, nf90_MPIIO), MPI_COMM, MPI_INFO_NULL,ncdf_id)
+        r=NF90_create_par(fname, IOR(nf90_netcdf4,nf90_MPIIO), MPI_COMM, info ,ncdf_id)
         call handle_err(r)
 
         r=NF90_def_dim(ncdf_id, 'x_dim', NX, x_dim_id)
@@ -165,6 +166,8 @@ module output
 
     subroutine close_file()
         implicit none
+        r=NF90_sync(ncdf_id)
+        call handle_err(r)
         r=NF90_close(ncdf_id)
         call handle_err(r)
     end subroutine
