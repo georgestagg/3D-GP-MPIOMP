@@ -75,7 +75,7 @@ subroutine add_hard_circle_trap
             do i = sx,ex
                 rx = GX(i)-TX
                 ry = GY(j)-TY
-                ry = GZ(k)-TZ
+                rz = GZ(k)-TZ
                 r = SQRT(rx**2.0+ry**2.0+rz**2.0)
                 if (r > TRAPR) then
                     POT(i,j,k) = POT(i,j,k)+TRAPHEIGHT
@@ -97,7 +97,7 @@ subroutine add_hard_box_trap
             do i = sx,ex
                 rx = GX(i)-TX
                 ry = GY(j)-TY
-                ry = GZ(k)-TZ
+                rz = GZ(k)-TZ
                 r = SQRT(rx**2.0+ry**2.0+rz**2.0)
                 if (abs(rx) > TRAPR .OR. abs(ry) > TRAPR .OR. abs(rz) > TRAPR) then
                     POT(i,j,k) = POT(i,j,k)+TRAPHEIGHT
