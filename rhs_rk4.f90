@@ -125,6 +125,11 @@ module rhs_RK4
             end do
         !$OMP end parallel do
         end if
+
+        !Renormalise WF after imaginary time decay
+        if(rt .eq. 0) then
+          call RK4_renormalise
+        end if
     end subroutine
 
     subroutine halo_swap(kk)
@@ -135,9 +140,9 @@ module rhs_RK4
         include 'mpif.h'
 
         !X dim - tag 0 and 1
-        call MPI_Cart_shift(MPI_COMM,0,1,rs,rd,IERR)
+        call MPI_Cart_shift(MPI_COMM_GRID,0,1,rs,rd,IERR)
         call MPI_sendrecv(kk(ex-1,sy:ey,sz:ez),(ey-sy+1)*(ez-sz+1), MPI_DOUBLE_COMPLEX, rd,0,&
-                          kk(sx,sy:ey,sz:ez),(ey-sy+1)*(ez-sz+1),MPI_DOUBLE_COMPLEX, rs, 0, MPI_COMM,MPISTAT,IERR)
+                          kk(sx,sy:ey,sz:ez),(ey-sy+1)*(ez-sz+1),MPI_DOUBLE_COMPLEX, rs, 0, MPI_COMM_GRID,MPISTAT,IERR)
         if(IERR .ne. MPI_SUCCESS) then
           write(6,*) "Error running MPI_sendrecv on Rank: ", RANK, ". Error code: ",IERR
           write(6,*) "Something has gone wrong... Quitting."
@@ -145,7 +150,7 @@ module rhs_RK4
         end if
 
         call MPI_sendrecv(kk(sx+1,sy:ey,sz:ez),(ey-sy+1)*(ez-sz+1), MPI_DOUBLE_COMPLEX, rs,1,&
-                          kk(ex,sy:ey,sz:ez),(ey-sy+1)*(ez-sz+1),MPI_DOUBLE_COMPLEX, rd, 1, MPI_COMM,MPISTAT,IERR)
+                          kk(ex,sy:ey,sz:ez),(ey-sy+1)*(ez-sz+1),MPI_DOUBLE_COMPLEX, rd, 1, MPI_COMM_GRID,MPISTAT,IERR)
         if(IERR .ne. MPI_SUCCESS) then
           write(6,*) "Error running MPI_sendrecv on Rank: ", RANK, ". Error code: ", IERR
           write(6,*) "Something has gone wrong... Quitting."
@@ -153,32 +158,32 @@ module rhs_RK4
         end if
 
         !Y dim - tag 2 and 3
-        call MPI_Cart_shift(MPI_COMM,1,1,rs,rd,IERR)
+        call MPI_Cart_shift(MPI_COMM_GRID,1,1,rs,rd,IERR)
         call MPI_sendrecv(kk(sx:ex,ey-1,sz:ez),(ex-sx+1)*(ez-sz+1), MPI_DOUBLE_COMPLEX, rd,2,&
-                          kk(sx:ex,sy,sz:ez),(ex-sx+1)*(ez-sz+1),MPI_DOUBLE_COMPLEX, rs, 2, MPI_COMM,MPISTAT,IERR)
+                          kk(sx:ex,sy,sz:ez),(ex-sx+1)*(ez-sz+1),MPI_DOUBLE_COMPLEX, rs, 2, MPI_COMM_GRID,MPISTAT,IERR)
         if(IERR .ne. MPI_SUCCESS) then
           write(6,*) "Error running MPI_sendrecv on Rank: ", RANK, ". Error code: ", IERR
           write(6,*) "Something has gone wrong... Quitting."
           CALL EXIT(1)
         end if
         call MPI_sendrecv(kk(sx:ex,sy+1,sz:ez),(ex-sx+1)*(ez-sz+1), MPI_DOUBLE_COMPLEX, rs,3,&
-                          kk(sx:ex,ey,sz:ez),(ex-sx+1)*(ez-sz+1),MPI_DOUBLE_COMPLEX, rd, 3, MPI_COMM,MPISTAT,IERR)
+                          kk(sx:ex,ey,sz:ez),(ex-sx+1)*(ez-sz+1),MPI_DOUBLE_COMPLEX, rd, 3, MPI_COMM_GRID,MPISTAT,IERR)
         if(IERR .ne. MPI_SUCCESS) then
           write(6,*) "Error running MPI_sendrecv on Rank: ", RANK, ". Error code: ",IERR
           write(6,*) "Something has gone wrong... Quitting."
           CALL EXIT(1)
         end if
         !Z dim - tag 4 and 5
-        call MPI_Cart_shift(MPI_COMM,2,1,rs,rd,IERR)
+        call MPI_Cart_shift(MPI_COMM_GRID,2,1,rs,rd,IERR)
         call MPI_sendrecv(kk(sx:ex,sy:ey,ez-1),(ex-sx+1)*(ey-sy+1), MPI_DOUBLE_COMPLEX, rd,4,&
-                          kk(sx:ex,sy:ey,sz),(ex-sx+1)*(ey-sy+1),MPI_DOUBLE_COMPLEX, rs, 4, MPI_COMM,MPISTAT,IERR)
+                          kk(sx:ex,sy:ey,sz),(ex-sx+1)*(ey-sy+1),MPI_DOUBLE_COMPLEX, rs, 4, MPI_COMM_GRID,MPISTAT,IERR)
         if(IERR .ne. MPI_SUCCESS) then
           write(6,*) "Error running MPI_sendrecv on Rank: ", RANK, ". Error code: ",IERR
           write(6,*) "Something has gone wrong... Quitting."
           CALL EXIT(1)
         end if
         call MPI_sendrecv(kk(sx:ex,sy:ey,sz+1),(ex-sx+1)*(ey-sy+1), MPI_DOUBLE_COMPLEX, rs,5,&
-                          kk(sx:ex,sy:ey,ez),(ex-sx+1)*(ey-sy+1),MPI_DOUBLE_COMPLEX, rd, 5, MPI_COMM,MPISTAT,IERR)
+                          kk(sx:ex,sy:ey,ez),(ex-sx+1)*(ey-sy+1),MPI_DOUBLE_COMPLEX, rd, 5, MPI_COMM_GRID,MPISTAT,IERR)
         if(IERR .ne. MPI_SUCCESS) then
           write(6,*) "Error running MPI_sendrecv on Rank: ", RANK, ". Error code: ", IERR
           write(6,*) "Something has gone wrong... Quitting."
@@ -227,4 +232,24 @@ module rhs_RK4
                 if(s == sz-1) BC=ez
         end select
     end function
+
+    subroutine RK4_renormalise
+      implicit none
+      include 'mpif.h'
+      double precision :: local_norm,total_norm,local_pot_int,total_pot_int
+
+      GRID_T1(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1) = GRID(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1)*conjg(GRID(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1))
+
+      local_norm=sum(GRID_T1(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1))*DSPACE*DSPACE*DSPACE
+      call MPI_Allreduce(local_norm, total_norm, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_FFTW,IERR)
+
+      GRID_T1(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1) = 0.0d0
+      where (POT<1.0d0) GRID_T1(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1)=1.0d0
+
+      local_pot_int=sum(GRID_T1(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1))*DSPACE*DSPACE*DSPACE
+      call MPI_Allreduce(local_pot_int, total_pot_int, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_FFTW,IERR)
+
+      GRID(sx:ex,sy:ey,sz:ez) = GRID(sx:ex,sy:ey,sz:ez)/sqrt(total_norm)*sqrt(total_pot_int)
+
+    end subroutine
 end module
