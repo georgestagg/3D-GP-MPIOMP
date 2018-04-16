@@ -55,22 +55,24 @@ module rhs_RK4
                 end do
             end do
         !$OMP end parallel do
+
+        !Renormalise WF after imaginary time decay
+        if(rt .eq. 0) then
+          call RK4_renormalise
+        end if
     end subroutine
 
     subroutine RK4_gperhs(gt,kk,rt)
         implicit none
         integer :: rt,i,j,k
         complex*16, dimension(sx:ex,sy:ey,sz:ez) :: gt, kk
-        !OpenMP parallelised Homg GPE
+        !Homg GPE
         if (RHSType .eq. 0) then
          !$OMP parallel do private (i,j,k) collapse(3)
            do k = sz+1,ez-1
                do j = sy+1,ey-1
                    do i = sx+1,ex-1
-                       kk(i,j,k) = -0.5d0*(-6.0d0*gt(i,j,k)&
-                                   + gt(BC(i+1,0),j,k)+gt(BC(i-1,0),j,k)&
-                                   + gt(i,BC(j+1,1),k)+gt(i,BC(j-1,1),k)&
-                                   + gt(i,j,BC(k+1,2))+gt(i,j,BC(k-1,2)))/(DSPACE**2.0d0)&
+                       kk(i,j,k) = -0.5d0*laplacian(gt,i,j,k)&
                                    + gt(i,j,k)*gt(i,j,k)*CONJG(gt(i,j,k))&
                                    + POT(i,j,k)*gt(i,j,k) - gt(i,j,k)&
                                    + VELX*EYE*ddx(gt,i,j,k)&
@@ -84,15 +86,12 @@ module rhs_RK4
         !$OMP end parallel do
         end if
         if (RHSType .eq. 1) then
-          !OpenMP parallelised trapped GPE
+        !Trapped GPE
         !$OMP parallel do private (i,j,k) collapse(3)
            do k = sz+1,ez-1
                do j = sy+1,ey-1
                    do i = sx+1,ex-1
-                       kk(i,j,k) = -0.5d0*(-6.0d0*gt(i,j,k)&
-                                   + gt(BC(i+1,0),j,k)+gt(BC(i-1,0),j,k)&
-                                   + gt(i,BC(j+1,1),k)+gt(i,BC(j-1,1),k)&
-                                   + gt(i,j,BC(k+1,2))+gt(i,j,BC(k-1,2)))/(DSPACE**2.0d0)&
+                       kk(i,j,k) = -0.5d0*laplacian(gt,i,j,k)&
                                    + harm_osc_C*gt(i,j,k)*gt(i,j,k)*CONJG(gt(i,j,k))&
                                    + POT(i,j,k)*gt(i,j,k) - harm_osc_mu*gt(i,j,k)&
                                    + OMEGA*EYE*((GX(i)-(NX-1)*DSPACE/2.0d0)*ddy(gt,i,j,k)&
@@ -124,11 +123,6 @@ module rhs_RK4
                 end do
             end do
         !$OMP end parallel do
-        end if
-
-        !Renormalise WF after imaginary time decay
-        if(rt .eq. 0) then
-          call RK4_renormalise
         end if
     end subroutine
 
@@ -196,7 +190,7 @@ module rhs_RK4
         implicit none
         integer :: i,j,k
         complex*16, dimension(sx:ex,sy:ey,sz:ez) :: gt
-        ddx = (gt(BC(i+1,0),j,k)-gt(BC(i-1,0),j,k))/(2.0d0*DSPACE)
+        ddx = (BC(gt,i+1,j,k)-BC(gt,i-1,j,k))/(2.0d0*DSPACE)
     end function
 
     COMPLEX*16 function ddy(gt,i,j,k)
@@ -204,7 +198,7 @@ module rhs_RK4
         implicit none
         integer :: i,j,k
         complex*16, dimension(sx:ex,sy:ey,sz:ez) :: gt
-        ddy = (gt(i,BC(j+1,1),k)-gt(i,BC(j-1,1),k))/(2.0d0*DSPACE)
+        ddy = (BC(gt,i,j+1,k)-BC(gt,i,j-1,k))/(2.0d0*DSPACE)
     end function
 
     COMPLEX*16 function ddz(gt,i,j,k)
@@ -212,25 +206,44 @@ module rhs_RK4
         implicit none
         complex*16, dimension(sx:ex,sy:ey,sz:ez) :: gt
         integer :: i,j,k
-        ddz = (gt(i,j,BC(k+1,2))-gt(i,j,BC(k-1,2)))/(2.0d0*DSPACE)
+        ddz = (BC(gt,i,j,k+1)-BC(gt,i,j,k-1))/(2.0d0*DSPACE)
     end function
 
-    integer function BC(s,n)
+    COMPLEX*16 function laplacian(gt,i,j,k)
         use params
         implicit none
-        integer :: s,n
-        BC=s
-        select case (n)
-            case (0)
-                if(s == ex+1) BC=sx
-                if(s == sx-1) BC=ex
-            case (1)
-                if(s == ey+1) BC=sy
-                if(s == sy-1) BC=ey
-            case (2)
-                if(s == ez+1) BC=sz
-                if(s == sz-1) BC=ez
-        end select
+        complex*16, dimension(sx:ex,sy:ey,sz:ez) :: gt
+        integer :: i,j,k
+        laplacian = (-6.0d0*gt(i,j,k) + BC(gt,i+1,j,k)+BC(gt,i-1,j,k)&
+                                      + BC(gt,i,j+1,k)+BC(gt,i,j-1,k)&
+                                      + BC(gt,i,j,k+1)+BC(gt,i,j,k-1))/(DSPACE**2.0d0)
+    end function
+
+    complex*16 function BC(gt,i,j,k)
+        use params
+        implicit none
+        complex*16, dimension(sx:ex,sy:ey,sz:ez) :: gt
+        integer :: i,j,k,ii,jj,kk
+        !Note - Ghost points means that periodic is the default
+        ii = i
+        jj = j
+        kk = k
+        if(i == NX+1 .and. BCX == 0) ii=NX
+        if(i == 0   .and. BCX == 0) ii=1
+        if(j == NY+1 .and. BCY == 0) jj=NY
+        if(j == 0   .and. BCY == 0) jj=1
+        if(k == NZ+1 .and. BCZ == 0) kk=NZ
+        if(k == 0   .and. BCZ == 0) kk=1
+
+        if((i>=NX .or. i<=1) .and. BCX==2) then
+          BC = 0.0d0
+        else if ((j>=NY .or. j<=1) .and. BCY==2) then
+          BC = 0.0d0
+        else if ((k>=NZ .or. k<=1) .and. BCZ==2) then
+          BC = 0.0d0
+        else
+          BC = gt(ii,jj,kk)
+        end if
     end function
 
     subroutine RK4_renormalise

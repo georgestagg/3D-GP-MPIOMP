@@ -3,7 +3,9 @@ subroutine initCond
     use output
     implicit none
     integer :: i, j ,k
-
+    if(RANK .eq. 0) then
+        write (6, *) 'Applying initial condition...'
+    end if
     if(initialCondType .eq. 0) then
         GRID = 1.0d0
     else if (initialCondType .eq. 1) then
@@ -49,9 +51,9 @@ subroutine makeRandomPhase
 
     call calc_rpKC_rpAMP(rpKC, rpAMP)
     if(RANK .eq. 0) then
-        write (6, *) 'Imposing the highly non-equilibrium state...'
-        write (6, *) 'K-space amplitude = ', rpAMP
-        write (6, *) 'Maximum wavenumber = ', sqrt(rpKC)*DKSPACE
+        write (6, *) ' Imposing the highly non-equilibrium state...'
+        write (6, *) ' K-space amplitude = ', rpAMP
+        write (6, *) ' Maximum wavenumber = ', sqrt(rpKC)*DKSPACE
     end if
 
    !$OMP parallel do private (i,j,k) collapse(3)
