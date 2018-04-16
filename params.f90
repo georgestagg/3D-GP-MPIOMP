@@ -55,6 +55,7 @@ module params
 
   double precision :: TRAPHEIGHT = 0.0d0
   double precision :: TRAPR = 0.0d0
+  double precision :: TRAPBETA = 0.5d0
   double precision :: TX=0.0d0
   double precision :: TY=0.0d0
   double precision :: TZ=0.0d0
