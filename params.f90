@@ -36,6 +36,8 @@ module params
   integer :: BCX = 1
   integer :: BCY = 1
   integer :: BCZ = 1
+  double precision :: NVORTX = 0.0d0
+  double precision :: NVORTY = 0.0d0
   double precision :: NVORTZ = 0.0d0
 
   !Potentials

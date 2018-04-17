@@ -17,9 +17,8 @@ module parallel
         implicit none
         integer,intent(in) :: RHSType
         include 'mpif.h'
-        if(RHSType < 2) then
-            METHOD = 0
-        else if (RHSType .eq. 2) then
+        METHOD = 0
+        if (RHSType .eq. 2) then
             METHOD = 1
         end if
 

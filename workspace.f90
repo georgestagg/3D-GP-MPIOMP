@@ -2,7 +2,8 @@ module workspace
     use params
     use parallel
     complex*16, dimension(:,:,:), ALLOCATABLE, TARGET :: GRID_RK4,GRID_RK4_T1
-	complex*16, dimension(:,:,:), ALLOCATABLE :: GRID_T2,GRID_T3,GRID_T4,DDI_K
+	complex*16, dimension(:,:,:), ALLOCATABLE :: GRID_T2,GRID_T3,DDI_K
+	complex*16, dimension(:,:,:), ALLOCATABLE :: GRID_E,QP_EX,QP_EY,QP_EZ
 	double precision, dimension(:), ALLOCATABLE :: GX,GY,GZ,KX,KY,KZ
 	integer :: sx,sy,sz,ex,ey,ez,cur_step
 	double precision, dimension(:,:,:), ALLOCATABLE :: POT
@@ -21,7 +22,6 @@ module workspace
 			ALLOCATE(GRID_RK4_T1(sx:ex,sy:ey,sz:ez))
 			ALLOCATE(GRID_T2(sx:ex,sy:ey,sz:ez))
 			ALLOCATE(GRID_T3(sx:ex,sy:ey,sz:ez))
-			ALLOCATE(GRID_T4(sx:ex,sy:ey,sz:ez))
 			GRID => GRID_RK4
 			GRID_T1 => GRID_RK4_T1
 		else if (METHOD==1) then
@@ -58,6 +58,13 @@ module workspace
 			ALLOCATE(DDI_K(sx:ex,sy:ey,sz:ez))
         	call setupDDIK
         end if
+		if (RHSType .eq. 3) then
+			ALLOCATE(GRID_E(sx:ex,sy:ey,sz:ez))
+			ALLOCATE(QP_EX(sx:ex,sy:ey,sz:ez))
+			ALLOCATE(QP_EY(sx:ex,sy:ey,sz:ez))
+			ALLOCATE(QP_EZ(sx:ex,sy:ey,sz:ez))
+			call setupEXEYEZ
+		end if
         GRID = 0.0d0
         GRID_T1 = 0.0d0
 		TIME = 0.0d0
@@ -73,6 +80,41 @@ module workspace
                     !NOTE: This term is calculated in transposed k-space, so KY is really KZ.
                     !NB: http://fftw.org/doc/Transposed-distributions.html#Transposed-distributions
                     DDI_K(i,j,k) = 3.0d0*(KY(j)**2.0d0)/(KX(i)**2.0d0+KY(j)**2.0d0+KZ(k)**2.0d0+1e-20) - 1.0d0
+                end do
+            end do
+        end do
+        !$OMP end parallel do
+	end subroutine
+
+	subroutine setupEXEYEZ
+	    implicit none
+	    integer :: i, j ,k
+       !$OMP parallel do private (i,j,k) collapse(3)
+        do k = sz,ez
+            do j = sy,ey
+                do i = sx,ex
+                    QP_EX(i,j,k) = exp(EYE*PI*NVORTY*GX(i)*GZ(k)/((NX-1)*DSPACE*(NZ-1)*DSPACE)&
+                                  -EYE*PI*NVORTZ*GX(i)*GY(j)/((NX-1)*DSPACE*(NY-1)*DSPACE))
+                end do
+            end do
+        end do
+        !$OMP end parallel do
+       !$OMP parallel do private (i,j,k) collapse(3)
+        do k = sz,ez
+            do j = sy,ey
+                do i = sx,ex
+                    QP_EY(i,j,k) = exp(-EYE*PI*NVORTX*GY(j)*GZ(k)/((NY-1)*DSPACE*(NZ-1)*DSPACE)&
+                                  +EYE*PI*NVORTZ*GY(j)*GX(i)/((NY-1)*DSPACE*(NX-1)*DSPACE))
+                end do
+            end do
+        end do
+        !$OMP end parallel do
+       !$OMP parallel do private (i,j,k) collapse(3)
+        do k = sz,ez
+            do j = sy,ey
+                do i = sx,ex
+                    QP_EZ(i,j,k) = exp(EYE*PI*NVORTX*GZ(k)*GY(j)/((NZ-1)*DSPACE*(NY-1)*DSPACE)&
+                                  -EYE*PI*NVORTY*GZ(k)*GX(i)/((NZ-1)*DSPACE*(NX-1)*DSPACE))
                 end do
             end do
         end do

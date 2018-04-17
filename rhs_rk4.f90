@@ -104,39 +104,32 @@ module rhs_RK4
 
         if (RHSType .eq. 3) then
         !Quasi-periodic GPE
-        !$OMP parallel do private (i,j,k) collapse(3)
-        do k = sz,ez
-          do j = sy,ey
-            do i = sx,ex
-              GRID_T4(i,j,k) = exp(EYE*PI*NVORTZ*GX(i)*GY(j)/((NX-1)*DSPACE*(NY-1)*DSPACE))*GRID(i,j,k)
-            end do
-          end do
-        end do
-        !$OMP end parallel do
+        GRID_E = CONJG(QP_EX)*GRID
         !$OMP parallel do private (i,j,k) collapse(3)
         do k = sz+1,ez-1
           do j = sy+1,ey-1
             do i = sx+1,ex-1
-              kk(i,j,k) = gt(i,j,k)*gt(i,j,k)*CONJG(gt(i,j,k))-gt(i,j,k)-d2dz2(gt,i,j,k)&
-                          -CONJG(exp(EYE*PI*NVORTZ*GX(i)*GY(j)/((NX-1)*DSPACE*(NY-1)*DSPACE)))*d2dx2(GRID_T4,i,j,k)
+              kk(i,j,k) = gt(i,j,k)*gt(i,j,k)*CONJG(gt(i,j,k))-gt(i,j,k)-QP_EX(i,j,k)*d2dx2(GRID_E,i,j,k)
             end do
           end do
         end do
         !$OMP end parallel do
-        !$OMP parallel do private (i,j,k) collapse(3)
-        do k = sz,ez
-          do j = sy,ey
-            do i = sx,ex
-              GRID_T4(i,j,k) = CONJG(exp(EYE*PI*NVORTZ*GX(i)*GY(j)/((NX-1)*DSPACE*(NY-1)*DSPACE)))*GRID(i,j,k)
-            end do
-          end do
-        end do
-        !$OMP end parallel do
+        GRID_E = CONJG(QP_EY)*GRID
         !$OMP parallel do private (i,j,k) collapse(3)
         do k = sz+1,ez-1
           do j = sy+1,ey-1
             do i = sx+1,ex-1
-              kk(i,j,k) = kk(i,j,k)-exp(EYE*PI*NVORTZ*GX(i)*GY(j)/((NX-1)*DSPACE*(NY-1)*DSPACE))*d2dy2(GRID_T4,i,j,k)
+              kk(i,j,k) = kk(i,j,k)-QP_EY(i,j,k)*d2dy2(GRID_E,i,j,k)
+            end do
+          end do
+        end do
+        !$OMP end parallel do
+        GRID_E = CONJG(QP_EZ)*GRID
+        !$OMP parallel do private (i,j,k) collapse(3)
+        do k = sz+1,ez-1
+          do j = sy+1,ey-1
+            do i = sx+1,ex-1
+              kk(i,j,k) = kk(i,j,k)-QP_EZ(i,j,k)*d2dz2(GRID_E,i,j,k)
             end do
           end do
         end do
@@ -293,27 +286,42 @@ module rhs_RK4
         ii = i
         jj = j
         kk = k
+
+        !Reflective
         if(i == NX+1 .and. BCX == 0) ii=NX
         if(i == 0   .and. BCX == 0) ii=1
         if(j == NY+1 .and. BCY == 0) jj=NY
         if(j == 0   .and. BCY == 0) jj=1
         if(k == NZ+1 .and. BCZ == 0) kk=NZ
         if(k == 0   .and. BCZ == 0) kk=1
-
+        
+        !Zero
         if((i>=NX .or. i<=1) .and. BCX==2) then
           BC = 0.0d0
         else if ((j>=NY .or. j<=1) .and. BCY==2) then
           BC = 0.0d0
         else if ((k>=NZ .or. k<=1) .and. BCZ==2) then
           BC = 0.0d0
+
+        !Quasi-periodic
         else if(i == NX+1 .and. BCX==3) then
-          BC = gt(NX+1,jj,kk)*exp(EYE*PI*NVORTZ*GY(jj)/((NY-1)*DSPACE))
+          BC = gt(NX+1,jj,kk)*exp(EYE*PI*NVORTZ*GY(jj)/((NY-1)*DSPACE)-EYE*PI*NVORTY*GZ(kk)/((NZ-1)*DSPACE))
         else if(i == 0 .and. BCX==3) then
-          BC = gt(0,jj,kk)/exp(EYE*PI*NVORTZ*GY(jj)/((NY-1)*DSPACE))
+          BC = gt(0,jj,kk)/exp(EYE*PI*NVORTZ*GY(jj)/((NY-1)*DSPACE)-EYE*PI*NVORTY*GZ(kk)/((NZ-1)*DSPACE))
+
         else if(j == NY+1 .and. BCY==3) then
-          BC = gt(ii,NY+1,kk)*exp(-EYE*PI*NVORTZ*GX(ii)/((NX-1)*DSPACE))
+          BC = gt(ii,NY+1,kk)*exp(-EYE*PI*NVORTZ*GX(ii)/((NX-1)*DSPACE)+EYE*PI*NVORTX*GZ(kk)/((NZ-1)*DSPACE))
         else if(j == 0 .and. BCY==3) then
-          BC = gt(ii,0,kk)/exp(-EYE*PI*NVORTZ*GX(ii)/((NX-1)*DSPACE))
+          BC = gt(ii,0,kk)/exp(-EYE*PI*NVORTZ*GX(ii)/((NX-1)*DSPACE)+EYE*PI*NVORTX*GZ(kk)/((NZ-1)*DSPACE))
+
+        else if(k == NZ+1 .and. BCZ==3) then
+          BC = gt(ii,jj,NZ+1)*exp(EYE*PI*NVORTY*GX(ii)/((NX-1)*DSPACE)-EYE*PI*NVORTX*GY(jj)/((NY-1)*DSPACE)&
+                                    +EYE*PI*NVORTX*NVORTY)
+        else if(k == 0 .and. BCZ==3) then
+          BC = gt(ii,jj,0)/exp(EYE*PI*NVORTY*GX(ii)/((NX-1)*DSPACE)-EYE*PI*NVORTX*GY(jj)/((NY-1)*DSPACE)&
+                                    +EYE*PI*NVORTX*NVORTY)
+
+        !Everything else
         else
           BC = gt(ii,jj,kk)
         end if
