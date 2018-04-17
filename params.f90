@@ -36,6 +36,7 @@ module params
   integer :: BCX = 1
   integer :: BCY = 1
   integer :: BCZ = 1
+  double precision :: NVORTZ = 0.0d0
 
   !Potentials
   logical :: recalculatePot = .false.

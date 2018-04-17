@@ -2,7 +2,7 @@ module workspace
     use params
     use parallel
     complex*16, dimension(:,:,:), ALLOCATABLE, TARGET :: GRID_RK4,GRID_RK4_T1
-	complex*16, dimension(:,:,:), ALLOCATABLE :: GRID_T2,GRID_T3,DDI_K
+	complex*16, dimension(:,:,:), ALLOCATABLE :: GRID_T2,GRID_T3,GRID_T4,DDI_K
 	double precision, dimension(:), ALLOCATABLE :: GX,GY,GZ,KX,KY,KZ
 	integer :: sx,sy,sz,ex,ey,ez,cur_step
 	double precision, dimension(:,:,:), ALLOCATABLE :: POT
@@ -21,6 +21,7 @@ module workspace
 			ALLOCATE(GRID_RK4_T1(sx:ex,sy:ey,sz:ez))
 			ALLOCATE(GRID_T2(sx:ex,sy:ey,sz:ez))
 			ALLOCATE(GRID_T3(sx:ex,sy:ey,sz:ez))
+			ALLOCATE(GRID_T4(sx:ex,sy:ey,sz:ez))
 			GRID => GRID_RK4
 			GRID_T1 => GRID_RK4_T1
 		else if (METHOD==1) then

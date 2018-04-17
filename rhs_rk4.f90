@@ -102,6 +102,47 @@ module rhs_RK4
         !$OMP end parallel do
         end if
 
+        if (RHSType .eq. 3) then
+        !Quasi-periodic GPE
+        !$OMP parallel do private (i,j,k) collapse(3)
+        do k = sz,ez
+          do j = sy,ey
+            do i = sx,ex
+              GRID_T4(i,j,k) = exp(EYE*PI*NVORTZ*GX(i)*GY(j)/((NX-1)*DSPACE*(NY-1)*DSPACE))*GRID(i,j,k)
+            end do
+          end do
+        end do
+        !$OMP end parallel do
+        !$OMP parallel do private (i,j,k) collapse(3)
+        do k = sz+1,ez-1
+          do j = sy+1,ey-1
+            do i = sx+1,ex-1
+              kk(i,j,k) = gt(i,j,k)*gt(i,j,k)*CONJG(gt(i,j,k))-gt(i,j,k)-d2dz2(gt,i,j,k)&
+                          -CONJG(exp(EYE*PI*NVORTZ*GX(i)*GY(j)/((NX-1)*DSPACE*(NY-1)*DSPACE)))*d2dx2(GRID_T4,i,j,k)
+            end do
+          end do
+        end do
+        !$OMP end parallel do
+        !$OMP parallel do private (i,j,k) collapse(3)
+        do k = sz,ez
+          do j = sy,ey
+            do i = sx,ex
+              GRID_T4(i,j,k) = CONJG(exp(EYE*PI*NVORTZ*GX(i)*GY(j)/((NX-1)*DSPACE*(NY-1)*DSPACE)))*GRID(i,j,k)
+            end do
+          end do
+        end do
+        !$OMP end parallel do
+        !$OMP parallel do private (i,j,k) collapse(3)
+        do k = sz+1,ez-1
+          do j = sy+1,ey-1
+            do i = sx+1,ex-1
+              kk(i,j,k) = kk(i,j,k)-exp(EYE*PI*NVORTZ*GX(i)*GY(j)/((NX-1)*DSPACE*(NY-1)*DSPACE))*d2dy2(GRID_T4,i,j,k)
+            end do
+          end do
+        end do
+        !$OMP end parallel do
+        end if
+
         !Damping
         if(dble(GAMMAC) > 0.0d0) then
         !$OMP parallel do private (i,j,k) collapse(3)
@@ -209,6 +250,30 @@ module rhs_RK4
         ddz = (BC(gt,i,j,k+1)-BC(gt,i,j,k-1))/(2.0d0*DSPACE)
     end function
 
+    COMPLEX*16 function d2dx2(gt,i,j,k)
+        use params
+        implicit none
+        integer :: i,j,k
+        complex*16, dimension(sx:ex,sy:ey,sz:ez) :: gt
+        d2dx2 = (-2.0d0*gt(i,j,k) + BC(gt,i+1,j,k)+BC(gt,i-1,j,k))/(DSPACE**2.0d0)
+    end function
+
+    COMPLEX*16 function d2dy2(gt,i,j,k)
+        use params
+        implicit none
+        integer :: i,j,k
+        complex*16, dimension(sx:ex,sy:ey,sz:ez) :: gt
+        d2dy2 = (-2.0d0*gt(i,j,k) + BC(gt,i,j+1,k)+BC(gt,i,j-1,k))/(DSPACE**2.0d0)
+    end function
+
+    COMPLEX*16 function d2dz2(gt,i,j,k)
+        use params
+        implicit none
+        integer :: i,j,k
+        complex*16, dimension(sx:ex,sy:ey,sz:ez) :: gt
+        d2dz2 = (-2.0d0*gt(i,j,k) + BC(gt,i,j,k+1)+BC(gt,i,j,k-1))/(DSPACE**2.0d0)
+    end function
+
     COMPLEX*16 function laplacian(gt,i,j,k)
         use params
         implicit none
@@ -241,6 +306,14 @@ module rhs_RK4
           BC = 0.0d0
         else if ((k>=NZ .or. k<=1) .and. BCZ==2) then
           BC = 0.0d0
+        else if(i == NX+1 .and. BCX==3) then
+          BC = gt(NX+1,jj,kk)*exp(EYE*PI*NVORTZ*GY(jj)/((NY-1)*DSPACE))
+        else if(i == 0 .and. BCX==3) then
+          BC = gt(0,jj,kk)/exp(EYE*PI*NVORTZ*GY(jj)/((NY-1)*DSPACE))
+        else if(j == NY+1 .and. BCY==3) then
+          BC = gt(ii,NY+1,kk)*exp(-EYE*PI*NVORTZ*GX(ii)/((NX-1)*DSPACE))
+        else if(j == 0 .and. BCY==3) then
+          BC = gt(ii,0,kk)/exp(-EYE*PI*NVORTZ*GX(ii)/((NX-1)*DSPACE))
         else
           BC = gt(ii,jj,kk)
         end if

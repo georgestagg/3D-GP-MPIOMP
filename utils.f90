@@ -9,7 +9,7 @@ subroutine initCond
     if(initialCondType .eq. 0) then
         GRID = 1.0d0
     else if (initialCondType .eq. 1) then
-        call makeRandomPhase
+        call makeNonEquibPhase
     else if (initialCondType .eq. 2) then
     !$OMP parallel do private (i,j,k) collapse(3)
     do k = sz,ez
@@ -23,6 +23,8 @@ subroutine initCond
     !$OMP end parallel do
     else if (initialCondType .eq. 3) then
         call read_wf_file(ICRfilename)
+    else if (initialCondType .eq. 4) then
+        call makeRandomPhase
     else
         GRID=1.0d0
     end if
@@ -38,6 +40,35 @@ subroutine eulerStepOmega
 end subroutine
 
 subroutine makeRandomPhase
+    use workspace
+    implicit none
+    double precision :: r1, r2
+    integer :: i, j, k, n
+    integer, dimension(:), allocatable :: seed
+
+    call RANDOM_SEED(size = n)
+    allocate(seed(n))
+    seed = RANK
+    call RANDOM_SEED(PUT = seed)
+
+    if(RANK .eq. 0) then
+        write (6, *) ' Imposing a random IC...'
+    end if
+
+   !$OMP parallel do private (i,j,k) collapse(3)
+    do k = sz,ez
+        do j = sy,ey
+            do i = sx,ex
+                call random_number(r1)
+                call random_number(r2)
+                GRID(i,j,k) = r1*exp(2.0*PI*EYE*r2)
+            end do
+        end do
+    end do
+    !$OMP end parallel do
+end subroutine
+
+subroutine makeNonEquibPhase
     use workspace
     implicit none
     double precision :: rpKC, rpAMP, phi

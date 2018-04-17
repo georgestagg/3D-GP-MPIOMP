@@ -39,7 +39,7 @@ module parallel_3DWithGhost
         integer,intent(out) :: PSX,PEX,PSY,PEY,PSZ,PEZ
         pnx = NX/NODE_DIMS(1)
         pny = NY/NODE_DIMS(2)
-        pnz = NY/NODE_DIMS(3)     
+        pnz = NZ/NODE_DIMS(3)
         call MPI_CART_COORDS(MPI_COMM_GRID,COMM_GRID_RANK,3,NODE_COORDS,IERR_3DWG)
 
         !Get local grid (plus ghost)
@@ -60,6 +60,7 @@ module parallel_3DWithGhost
         if (NODE_COORDS(3) .eq. NODE_DIMS(3)-1) then
             PEZ = NZ + 1
         end if
+
         call MPI_BARRIER(MPI_COMM_GRID, IERR_3DWG)
     end subroutine
 
