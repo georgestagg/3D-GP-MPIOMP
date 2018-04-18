@@ -1,5 +1,6 @@
 function [gridx,gridy,gridz,psi,potential] = getWF(dirarg,frame,varargin)
 p = inputParser;
+p.KeepUnmatched = true;
 addRequired(p,'dirarg');
 addRequired(p,'frame');
 addParameter(p,'prefix','psi');

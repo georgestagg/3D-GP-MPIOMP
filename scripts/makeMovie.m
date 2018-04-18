@@ -1,10 +1,10 @@
-function makeMovie(dirarg,startno,stride,endno)
+function makeMovie(dirarg,startno,stride,endno,varargin)
     dirarg = regexprep(dirarg, '/$', ''); 
     pngfolder = strcat(dirarg, '/png');
     mkdir(pngfolder);
     for i=startno:stride:endno
         try
-            [gridx,gridy,gridz,psi,~] = getWF(dirarg,i);
+            [gridx,gridy,gridz,psi,~] = getWF(dirarg,i,varargin{:});
         catch e
             disp(e);
             continue;
@@ -12,9 +12,12 @@ function makeMovie(dirarg,startno,stride,endno)
         fprintf('read %d\n',i);
         j = i/stride;
         h=figure('visible','off');
-        %plotStarandPotpins(gridx,gridy,gridz,psi,potential);
-        plot3d_cutoff(gridx,gridy,gridz,psi,7,0.05);
-        %plot3d(gridx,gridy,gridz,psi,0.25);
+        plot3d(gridx,gridy,gridz,psi,varargin{:});
+        
+        %imagesc(gridx,gridy,squeeze(abs(psi(:,:,4)).^2))
+        %axis xy
+        %axis image
+        
         filename = strcat(pngfolder, '/d%04d.png');
         finalfname = sprintf(filename,j);
         print (h,'-dpng','-r300',finalfname);
