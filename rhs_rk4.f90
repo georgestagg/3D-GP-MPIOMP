@@ -1,18 +1,28 @@
 module rhs_RK4
-    use workspace
+  use workspace
 	contains
+    subroutine run_checks_RK4
+      implicit none
+      if(initialCondType == 2) then
+        if(RANK .eq. 0) then
+          write(6,'(a)') "Error: Highly non-equilibrium initialCondType is not supported with RK4"
+          call finalize_parallel
+          call exit(1)
+        end if
+      end if
+    end subroutine
     subroutine RK4_step(rt)
         implicit none
         integer :: rt,i,j,k
         !OpenMP parallelised RK4
-        call halo_swap(GRID)
-        call RK4_gperhs(GRID, GRID_T1,rt)
+        call halo_swap(WS(1)%GRID)
+        call RK4_gperhs(WS(1)%GRID, GRID_T1,rt)
         !$OMP parallel do private (i,j,k) collapse(3)
             do k = sz+1,ez-1
                 do j = sy+1,ey-1
                     do i = sx+1,ex-1
-                        GRID_T2(i,j,k) = GRID(i,j,k) + 0.5d0*DT*GRID_T1(i,j,k)
-                        GRID_T3(i,j,k) = GRID(i,j,k) + DT*GRID_T1(i,j,k)/6.0d0
+                        GRID_T2(i,j,k) = WS(1)%GRID(i,j,k) + 0.5d0*DT*GRID_T1(i,j,k)
+                        GRID_T3(i,j,k) = WS(1)%GRID(i,j,k) + DT*GRID_T1(i,j,k)/6.0d0
                     end do
                 end do
             end do
@@ -24,7 +34,7 @@ module rhs_RK4
             do k = sz+1,ez-1
                 do j = sy+1,ey-1
                     do i = sx+1,ex-1
-                        GRID_T2(i,j,k) = GRID(i,j,k) + 0.5d0*DT*GRID_T1(i,j,k)
+                        GRID_T2(i,j,k) = WS(1)%GRID(i,j,k) + 0.5d0*DT*GRID_T1(i,j,k)
                         GRID_T3(i,j,k) = GRID_T3(i,j,k) + DT*GRID_T1(i,j,k)/3.0d0
                     end do
                 end do
@@ -37,7 +47,7 @@ module rhs_RK4
             do k = sz+1,ez-1
                 do j = sy+1,ey-1
                     do i = sx+1,ex-1
-                        GRID_T2(i,j,k) = GRID(i,j,k) + DT*GRID_T1(i,j,k)
+                        GRID_T2(i,j,k) = WS(1)%GRID(i,j,k) + DT*GRID_T1(i,j,k)
                         GRID_T3(i,j,k) = GRID_T3(i,j,k) + DT*GRID_T1(i,j,k)/3.0d0
                     end do
                 end do
@@ -50,7 +60,7 @@ module rhs_RK4
             do k = sz+1,ez-1
                 do j = sy+1,ey-1
                     do i = sx+1,ex-1
-                        GRID(i,j,k) = GRID_T3(i,j,k) + DT*GRID_T1(i,j,k)/6.0d0
+                        WS(1)%GRID(i,j,k) = GRID_T3(i,j,k) + DT*GRID_T1(i,j,k)/6.0d0
                     end do
                 end do
             end do
@@ -78,8 +88,7 @@ module rhs_RK4
                                    + VELX*EYE*ddx(gt,i,j,k)&
                                    + VELY*EYE*ddy(gt,i,j,k)&
                                    + VELZ*EYE*ddz(gt,i,j,k)&
-                                   + OMEGA*EYE*((GX(i)-(NX-1)*DSPACE/2.0d0)*ddy(gt,i,j,k)&
-                                   - (GY(j)-(NY-1)*DSPACE/2.0d0)*ddx(gt,i,j,k))
+                                   + OMEGA*EYE*(GX(i)*ddy(gt,i,j,k)-GY(j)*ddx(gt,i,j,k))
                    end do
                end do
            end do
@@ -94,8 +103,7 @@ module rhs_RK4
                        kk(i,j,k) = -0.5d0*laplacian(gt,i,j,k)&
                                    + harm_osc_C*gt(i,j,k)*gt(i,j,k)*CONJG(gt(i,j,k))&
                                    + POT(i,j,k)*gt(i,j,k) - harm_osc_mu*gt(i,j,k)&
-                                   + OMEGA*EYE*((GX(i)-(NX-1)*DSPACE/2.0d0)*ddy(gt,i,j,k)&
-                                   - (GY(j)-(NY-1)*DSPACE/2.0d0)*ddx(gt,i,j,k))
+                                   + OMEGA*EYE*(GX(i)*ddy(gt,i,j,k)-GY(j)*ddx(gt,i,j,k))
                    end do
                end do
            end do
@@ -104,7 +112,7 @@ module rhs_RK4
 
         if (RHSType .eq. 3) then
         !Quasi-periodic GPE
-        GRID_E = CONJG(QP_EX)*GRID
+        GRID_E = CONJG(QP_EX)*gt
         !$OMP parallel do private (i,j,k) collapse(3)
         do k = sz+1,ez-1
           do j = sy+1,ey-1
@@ -114,7 +122,7 @@ module rhs_RK4
           end do
         end do
         !$OMP end parallel do
-        GRID_E = CONJG(QP_EY)*GRID
+        GRID_E = CONJG(QP_EY)*gt
         !$OMP parallel do private (i,j,k) collapse(3)
         do k = sz+1,ez-1
           do j = sy+1,ey-1
@@ -124,7 +132,7 @@ module rhs_RK4
           end do
         end do
         !$OMP end parallel do
-        GRID_E = CONJG(QP_EZ)*GRID
+        GRID_E = CONJG(QP_EZ)*gt
         !$OMP parallel do private (i,j,k) collapse(3)
         do k = sz+1,ez-1
           do j = sy+1,ey-1
@@ -294,36 +302,41 @@ module rhs_RK4
         if(j == 0   .and. BCY == 0) jj=1
         if(k == NZ+1 .and. BCZ == 0) kk=NZ
         if(k == 0   .and. BCZ == 0) kk=1
+
+        BC = gt(ii,jj,kk)
         
         !Zero
         if((i>=NX .or. i<=1) .and. BCX==2) then
           BC = 0.0d0
+          RETURN
         else if ((j>=NY .or. j<=1) .and. BCY==2) then
           BC = 0.0d0
+          RETURN
         else if ((k>=NZ .or. k<=1) .and. BCZ==2) then
           BC = 0.0d0
+          RETURN
+        end if
 
         !Quasi-periodic
-        else if(i == NX+1 .and. BCX==3) then
-          BC = gt(NX+1,jj,kk)*exp(EYE*PI*NVORTZ*GY(jj)/((NY-1)*DSPACE)-EYE*PI*NVORTY*GZ(kk)/((NZ-1)*DSPACE))
-        else if(i == 0 .and. BCX==3) then
-          BC = gt(0,jj,kk)/exp(EYE*PI*NVORTZ*GY(jj)/((NY-1)*DSPACE)-EYE*PI*NVORTY*GZ(kk)/((NZ-1)*DSPACE))
-
-        else if(j == NY+1 .and. BCY==3) then
-          BC = gt(ii,NY+1,kk)*exp(-EYE*PI*NVORTZ*GX(ii)/((NX-1)*DSPACE)+EYE*PI*NVORTX*GZ(kk)/((NZ-1)*DSPACE))
-        else if(j == 0 .and. BCY==3) then
-          BC = gt(ii,0,kk)/exp(-EYE*PI*NVORTZ*GX(ii)/((NX-1)*DSPACE)+EYE*PI*NVORTX*GZ(kk)/((NZ-1)*DSPACE))
-
-        else if(k == NZ+1 .and. BCZ==3) then
-          BC = gt(ii,jj,NZ+1)*exp(EYE*PI*NVORTY*GX(ii)/((NX-1)*DSPACE)-EYE*PI*NVORTX*GY(jj)/((NY-1)*DSPACE)&
+        if(i == NX+1 .and. BCX==3) then
+          BC = BC*exp(EYE*PI*NVORTZ*GY(jj)/((NY-1)*DSPACE)-EYE*PI*NVORTY*GZ(kk)/((NZ-1)*DSPACE))
+        end if
+        if(i == 0 .and. BCX==3) then
+          BC =BC/exp(EYE*PI*NVORTZ*GY(jj)/((NY-1)*DSPACE)-EYE*PI*NVORTY*GZ(kk)/((NZ-1)*DSPACE))
+        end if
+        if(j == NY+1 .and. BCY==3) then
+          BC = BC*exp(-EYE*PI*NVORTZ*GX(ii)/((NX-1)*DSPACE)+EYE*PI*NVORTX*GZ(kk)/((NZ-1)*DSPACE))
+        end if
+        if(j == 0 .and. BCY==3) then
+          BC = BC/exp(-EYE*PI*NVORTZ*GX(ii)/((NX-1)*DSPACE)+EYE*PI*NVORTX*GZ(kk)/((NZ-1)*DSPACE))
+        end if
+        if(k == NZ+1 .and. BCZ==3) then
+          BC = BC*exp(EYE*PI*NVORTY*GX(ii)/((NX-1)*DSPACE)-EYE*PI*NVORTX*GY(jj)/((NY-1)*DSPACE)&
                                     +EYE*PI*NVORTX*NVORTY)
-        else if(k == 0 .and. BCZ==3) then
-          BC = gt(ii,jj,0)/exp(EYE*PI*NVORTY*GX(ii)/((NX-1)*DSPACE)-EYE*PI*NVORTX*GY(jj)/((NY-1)*DSPACE)&
+        end if
+        if(k == 0 .and. BCZ==3) then
+          BC = BC/exp(EYE*PI*NVORTY*GX(ii)/((NX-1)*DSPACE)-EYE*PI*NVORTX*GY(jj)/((NY-1)*DSPACE)&
                                     +EYE*PI*NVORTX*NVORTY)
-
-        !Everything else
-        else
-          BC = gt(ii,jj,kk)
         end if
     end function
 
@@ -332,7 +345,8 @@ module rhs_RK4
       include 'mpif.h'
       double precision :: local_norm,total_norm,local_pot_int,total_pot_int
 
-      GRID_T1(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1) = GRID(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1)*conjg(GRID(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1))
+      GRID_T1(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1) = WS(1)%GRID(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1)*&
+                                                  conjg(WS(1)%GRID(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1))
 
       local_norm=sum(GRID_T1(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1))*DSPACE*DSPACE*DSPACE
       call MPI_Allreduce(local_norm, total_norm, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_FFTW,IERR)
@@ -343,7 +357,7 @@ module rhs_RK4
       local_pot_int=sum(GRID_T1(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1))*DSPACE*DSPACE*DSPACE
       call MPI_Allreduce(local_pot_int, total_pot_int, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_FFTW,IERR)
 
-      GRID(sx:ex,sy:ey,sz:ez) = GRID(sx:ex,sy:ey,sz:ez)/sqrt(total_norm)*sqrt(total_pot_int)
+      WS(1)%GRID(sx:ex,sy:ey,sz:ez) = WS(1)%GRID(sx:ex,sy:ey,sz:ez)/sqrt(total_norm)*sqrt(total_pot_int)
 
     end subroutine
 end module

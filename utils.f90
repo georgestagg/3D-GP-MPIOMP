@@ -2,31 +2,19 @@ subroutine initCond
     use workspace
     use output
     implicit none
-    integer :: i, j ,k
     if(RANK .eq. 0) then
         write (6, *) 'Applying initial condition...'
     end if
     if(initialCondType .eq. 0) then
-        GRID = 1.0d0
+        WS(1)%GRID = 1.0d0
     else if (initialCondType .eq. 1) then
-        call makeNonEquibPhase
+        call makeRandomPhase
     else if (initialCondType .eq. 2) then
-    !$OMP parallel do private (i,j,k) collapse(3)
-    do k = sz,ez
-        do j = sy,ey
-            do i = sx,ex
-                    GRID(i,j,k) = 1.0d0*EXP(-EYE*atan2(GY(j)-NY/2*DSPACE,GX(i)-NX/2*DSPACE-2.0))&
-                    *EXP(EYE*atan2(GY(j)-NY/2*DSPACE,GX(i)-NX/2*DSPACE+2.0))
-            end do
-        end do
-    end do
-    !$OMP end parallel do
+        call makeNonEquibPhase
     else if (initialCondType .eq. 3) then
         call read_wf_file(ICRfilename)
-    else if (initialCondType .eq. 4) then
-        call makeRandomPhase
     else
-        GRID=1.0d0
+        WS(1)%GRID=1.0d0
     end if
 end subroutine
 
@@ -61,7 +49,7 @@ subroutine makeRandomPhase
             do i = sx,ex
                 call random_number(r1)
                 call random_number(r2)
-                GRID(i,j,k) = r1*exp(2.0*PI*EYE*r2)
+                WS(1)%GRID(i,j,k) = r1*exp(2.0*PI*EYE*r2)
             end do
         end do
     end do
@@ -93,17 +81,17 @@ subroutine makeNonEquibPhase
             do i = sx,ex
                 if (KX(i)**2+KY(j)**2+KZ(k)**2 <= rpKC*DKSPACE**2) then
                     call random_number(phi)
-                    GRID(i,j,k) = rpAMP*exp(2.0*PI*EYE*phi)
+                    WS(1)%GRID(i,j,k) = rpAMP*exp(2.0*PI*EYE*phi)
                 else
-                    GRID(i,j,k) = 0.0d0
+                    WS(1)%GRID(i,j,k) = 0.0d0
                 end if
             end do
         end do
     end do
     !$OMP end parallel do
 
-    call fftw_mpi_execute_dft(fftw_backward_plan, GRID, GRID)
-    GRID=GRID/sqrt(dble(NX*NY*NZ))
+    call fftw_mpi_execute_dft(fftw_backward_plan, WS(1)%GRID, WS(1)%GRID)
+    WS(1)%GRID=WS(1)%GRID/sqrt(dble(NX*NY*NZ))
 
 end subroutine
 

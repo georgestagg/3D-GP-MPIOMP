@@ -7,6 +7,10 @@ module params
   integer :: NX = 64
   integer :: NY = 64
   integer :: NZ = 64
+  double precision :: XSHIFT = 0.0d0
+  double precision :: YSHIFT = 0.0d0
+  double precision :: ZSHIFT = 0.0d0
+  
   double precision :: DSPACE = 0.2d0
   double precision :: DTSIZE = 0.01d0
 
@@ -21,6 +25,10 @@ module params
   double precision :: ENERV = 0.75d0
   double precision :: NV = 0.75d0
   double precision :: EDD = 0.0d0
+
+  !Multi-component parameters
+  integer :: FIELDS = 1
+  !double precision :: FIELD_INTERACTIONS = reshape((/ 1, 2, 3, 4, 5, 6, 7, 8, 9 /), shape(array))
 
   !Linearly/Rotating moving frame
   double precision :: VELX = 0.0d0

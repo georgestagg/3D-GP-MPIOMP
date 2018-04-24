@@ -27,7 +27,7 @@ module output
             write(6,'(a)',advance="no") "."
         end if
 
-        call write_wf_file
+        call write_wf_file(rt)
 
         if(RANK .eq. 0) then
             write(6,'(a)',advance="no") "."
@@ -85,17 +85,19 @@ module output
         call handle_err(r)
     end subroutine
 
-    subroutine write_wf_file
+    subroutine write_wf_file(rt)
         implicit none
+        integer :: rt
         if(METHOD==0) then
-            call write_wf_file_RK4
+            call write_wf_file_RK4(rt)
         else if(METHOD==1) then
-            call write_wf_file_FFTW
+            call write_wf_file_FFTW(rt)
         end if
     end subroutine
 
-    subroutine write_wf_file_RK4
+    subroutine write_wf_file_RK4(rt)
         implicit none
+        integer :: rt
         !Dont forget to ignore ghost points!
         istarting(1) = sx+1
         icount(1) = ex-sx-1
@@ -118,21 +120,25 @@ module output
         icount(2) = ey-sy-1
         istarting(3) = sz+1
         icount(3) = ez-sz-1
-        r=NF90_put_var(ncdf_id,re_id,DBLE(GRID(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1)),istarting,icount)
+        r=NF90_put_var(ncdf_id,re_id,DBLE(WS(1)%GRID(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1)),istarting,icount)
         call handle_err(r)
-        r=NF90_put_var(ncdf_id,im_id,DIMAG(GRID(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1)),istarting,icount)
+        r=NF90_put_var(ncdf_id,im_id,DIMAG(WS(1)%GRID(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1)),istarting,icount)
         call handle_err(r)
         r=NF90_put_var(ncdf_id,pot_id,POT(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1),istarting,icount)
         call handle_err(r)
-
-        r=NF90_put_var(ncdf_id,step_id,cur_step)
+        if(rt == 1) then
+            r=NF90_put_var(ncdf_id,step_id,cur_step)
+        else
+            r=NF90_put_var(ncdf_id,step_id,0)
+        end if
         call handle_err(r)
         r=NF90_put_var(ncdf_id,time_id,TIME)
         call handle_err(r)
     end subroutine
 
-    subroutine write_wf_file_FFTW
+    subroutine write_wf_file_FFTW(rt)
         implicit none
+        integer :: rt
         istarting(1) = 1
         icount(1) = NX
         r=NF90_put_var(ncdf_id,x_id,GX,istarting,icount)
@@ -152,13 +158,17 @@ module output
         icount(2) = NY
         istarting(3) = 1+local_k_offset
         icount(3) = ez
-        r=NF90_put_var(ncdf_id,re_id,DBLE(GRID),istarting,icount)
+        r=NF90_put_var(ncdf_id,re_id,DBLE(WS(1)%GRID),istarting,icount)
         call handle_err(r)
-        r=NF90_put_var(ncdf_id,im_id,DIMAG(GRID),istarting,icount)
+        r=NF90_put_var(ncdf_id,im_id,DIMAG(WS(1)%GRID),istarting,icount)
         call handle_err(r)
         r=NF90_put_var(ncdf_id,pot_id,POT,istarting,icount)
         call handle_err(r)
-        r=NF90_put_var(ncdf_id,step_id,cur_step)
+        if(rt == 1) then
+            r=NF90_put_var(ncdf_id,step_id,cur_step)
+        else
+            r=NF90_put_var(ncdf_id,step_id,0)
+        end if
         call handle_err(r)
         r=NF90_put_var(ncdf_id,time_id,TIME)
         call handle_err(r)
@@ -223,7 +233,7 @@ module output
         r=NF90_get_var(rwf_ncid,rwf_time_id,TIME)
         call handle_err(r)
 
-        GRID = realgrid + EYE*imaggrid
+        WS(1)%GRID = realgrid + EYE*imaggrid
         POT = potgrid
 
         r = NF90_close(rwf_ncid)
@@ -275,7 +285,7 @@ module output
         r=NF90_get_var(rwf_ncid,rwf_time_id,TIME)
         call handle_err(r)
 
-        GRID = realgrid + EYE*imaggrid
+        WS(1)%GRID = realgrid + EYE*imaggrid
         POT = potgrid
 
         r = NF90_close(rwf_ncid)

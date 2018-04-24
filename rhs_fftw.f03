@@ -41,35 +41,35 @@ module rhs_FFTW
 		integer:: i,j,k
 
 		! Half Step 1
-		GRID_T1(sx:ex,sy:ey,sz:ez) = GRID(sx:ex,sy:ey,sz:ez)*conjg(GRID(sx:ex,sy:ey,sz:ez))
+		GRID_T1(sx:ex,sy:ey,sz:ez) = WS(1)%GRID(sx:ex,sy:ey,sz:ez)*conjg(WS(1)%GRID(sx:ex,sy:ey,sz:ez))
 		call fftw_mpi_execute_dft(fftw_forward_plan_dens, GRID_T1, GRID_T1)
 		GRID_T1(sx:ex,sy:ey,sz:ez) = GRID_T1(sx:ex,sy:ey,sz:ez)/(NX*NY*NZ)*DDI_K(sx:ex,sy:ey,sz:ez)
 		call fftw_mpi_execute_dft(fftw_backward_plan_dens, GRID_T1, GRID_T1)
 
-		GRID(sx:ex,sy:ey,sz:ez) = GRID(sx:ex,sy:ey,sz:ez)*exp(-0.5d0*DT*EYE*(POT(sx:ex,sy:ey,sz:ez) + &
-		                          EDD_T1*GRID(sx:ex,sy:ey,sz:ez)*conjg(GRID(sx:ex,sy:ey,sz:ez)) + EDD_T2*GRID_T1(sx:ex,sy:ey,sz:ez)))
+		WS(1)%GRID(sx:ex,sy:ey,sz:ez) = WS(1)%GRID(sx:ex,sy:ey,sz:ez)*exp(-0.5d0*DT*EYE*(POT(sx:ex,sy:ey,sz:ez) + &
+		        EDD_T1*WS(1)%GRID(sx:ex,sy:ey,sz:ez)*conjg(WS(1)%GRID(sx:ex,sy:ey,sz:ez)) + EDD_T2*GRID_T1(sx:ex,sy:ey,sz:ez)))
 
 		!Full step
-		call fftw_mpi_execute_dft(fftw_forward_plan, GRID, GRID)
+		call fftw_mpi_execute_dft(fftw_forward_plan, WS(1)%GRID, WS(1)%GRID)
 		!$OMP parallel do private (i,j,k) collapse(3)
 			do k = sz,ez
 				do j = sy,ey
 					do i = sx,ex
-				         GRID(i,j,k) = GRID(i,j,k)/(NX*NY*NZ)*exp(-DT*EYE*0.5d0*(KX(i)**2.0d0+KZ(k)**2.0d0+KY(j)**2.0d0))
+				         WS(1)%GRID(i,j,k) = WS(1)%GRID(i,j,k)/(NX*NY*NZ)*exp(-DT*EYE*0.5d0*(KX(i)**2.0d0+KZ(k)**2.0d0+KY(j)**2.0d0))
 					end do
 				end do
 			end do
 		!$OMP end parallel do
-		call fftw_mpi_execute_dft(fftw_backward_plan, GRID, GRID)
+		call fftw_mpi_execute_dft(fftw_backward_plan, WS(1)%GRID, WS(1)%GRID)
 
 		!Half Step 2
-		GRID_T1(sx:ex,sy:ey,sz:ez) = GRID(sx:ex,sy:ey,sz:ez)*conjg(GRID(sx:ex,sy:ey,sz:ez))
+		GRID_T1(sx:ex,sy:ey,sz:ez) = WS(1)%GRID(sx:ex,sy:ey,sz:ez)*conjg(WS(1)%GRID(sx:ex,sy:ey,sz:ez))
 		call fftw_mpi_execute_dft(fftw_forward_plan_dens, GRID_T1, GRID_T1)
 		GRID_T1(sx:ex,sy:ey,sz:ez) = GRID_T1(sx:ex,sy:ey,sz:ez)/(NX*NY*NZ)*DDI_K(sx:ex,sy:ey,sz:ez)
 		call fftw_mpi_execute_dft(fftw_backward_plan_dens, GRID_T1, GRID_T1)
 
-		GRID(sx:ex,sy:ey,sz:ez) = GRID(sx:ex,sy:ey,sz:ez)*exp(-0.5d0*DT*EYE*(POT(sx:ex,sy:ey,sz:ez) + &
-		                          EDD_T1*GRID(sx:ex,sy:ey,sz:ez)*conjg(GRID(sx:ex,sy:ey,sz:ez)) + EDD_T2*GRID_T1(sx:ex,sy:ey,sz:ez)))
+		WS(1)%GRID(sx:ex,sy:ey,sz:ez) = WS(1)%GRID(sx:ex,sy:ey,sz:ez)*exp(-0.5d0*DT*EYE*(POT(sx:ex,sy:ey,sz:ez) + &
+		        EDD_T1*WS(1)%GRID(sx:ex,sy:ey,sz:ez)*conjg(WS(1)%GRID(sx:ex,sy:ey,sz:ez)) + EDD_T2*GRID_T1(sx:ex,sy:ey,sz:ez)))
 
 		if(rt .eq. 0) then
 			call FFTW_renormalise
@@ -81,7 +81,7 @@ module rhs_FFTW
 		include 'mpif.h'
 		double precision :: local_norm,total_norm,local_pot_int,total_pot_int
 
-		GRID_T1(sx:ex,sy:ey,sz:ez) = GRID(sx:ex,sy:ey,sz:ez)*conjg(GRID(sx:ex,sy:ey,sz:ez))
+		GRID_T1(sx:ex,sy:ey,sz:ez) = WS(1)%GRID(sx:ex,sy:ey,sz:ez)*conjg(WS(1)%GRID(sx:ex,sy:ey,sz:ez))
 
 		local_norm=sum(GRID_T1(sx:ex,sy:ey,sz:ez))*DSPACE*DSPACE*DSPACE
 		call MPI_Allreduce(local_norm, total_norm, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_FFTW,IERR)
@@ -92,7 +92,7 @@ module rhs_FFTW
 		local_pot_int=sum(GRID_T1(sx:ex,sy:ey,sz:ez))*DSPACE*DSPACE*DSPACE
 		call MPI_Allreduce(local_pot_int, total_pot_int, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_FFTW,IERR)
 
-		GRID(sx:ex,sy:ey,sz:ez) = GRID(sx:ex,sy:ey,sz:ez)/sqrt(total_norm)*sqrt(total_pot_int)
+		WS(1)%GRID(sx:ex,sy:ey,sz:ez) = WS(1)%GRID(sx:ex,sy:ey,sz:ez)/sqrt(total_norm)*sqrt(total_pot_int)
 
 	end subroutine
 end module

@@ -1,31 +1,37 @@
 module workspace
     use params
     use parallel
-    complex*16, dimension(:,:,:), ALLOCATABLE, TARGET :: GRID_RK4,GRID_RK4_T1
-	complex*16, dimension(:,:,:), ALLOCATABLE :: GRID_T2,GRID_T3,DDI_K
-	complex*16, dimension(:,:,:), ALLOCATABLE :: GRID_E,QP_EX,QP_EY,QP_EZ
+
+	type :: computational_field
+		complex(C_DOUBLE_COMPLEX), pointer :: GRID(:,:,:)
+	end type computational_field
+	type(computational_field),DIMENSION(:),POINTER :: WS
+
+	complex(C_DOUBLE_COMPLEX), pointer :: GRID_T1(:,:,:),GRID_T2(:,:,:),GRID_T3(:,:,:)
+	complex*16, dimension(:,:,:), ALLOCATABLE :: DDI_K,GRID_E,QP_EX,QP_EY,QP_EZ
 	double precision, dimension(:), ALLOCATABLE :: GX,GY,GZ,KX,KY,KZ
+	double precision, dimension(:,:), ALLOCATABLE :: GG
 	integer :: sx,sy,sz,ex,ey,ez,cur_step
 	double precision, dimension(:,:,:), ALLOCATABLE :: POT
-	complex(C_DOUBLE_COMPLEX), pointer :: GRID(:,:,:),GRID_T1(:,:,:)
 	double precision :: TIME,DKSPACE,EDD_T1,EDD_T2
     contains
 	subroutine init_workspace
 		implicit none
-
 		if(RANK .eq. 0) then
 			write(6, '(a)') "Allocating distributed workspace data"
 		end if
+
+		ALLOCATE(WS(FIELDS))
+		ALLOCATE(GG(FIELDS,FIELDS))
+
         if(METHOD==0) then
         	call calc_local_idx_3DWithGhost(NX,NY,NZ,sx,ex,sy,ey,sz,ez)
-			ALLOCATE(GRID_RK4(sx:ex,sy:ey,sz:ez))
-			ALLOCATE(GRID_RK4_T1(sx:ex,sy:ey,sz:ez))
+			ALLOCATE(WS(1)%GRID(sx:ex,sy:ey,sz:ez))
+			ALLOCATE(GRID_T1(sx:ex,sy:ey,sz:ez))
 			ALLOCATE(GRID_T2(sx:ex,sy:ey,sz:ez))
 			ALLOCATE(GRID_T3(sx:ex,sy:ey,sz:ez))
-			GRID => GRID_RK4
-			GRID_T1 => GRID_RK4_T1
 		else if (METHOD==1) then
-			call setup_local_allocation(NX,NY,NZ,GRID,GRID_T1)
+			call setup_local_allocation(NX,NY,NZ,WS(1)%GRID,GRID_T1)
 			call parallel_barrier
 			sx = 1
 			ex = NX
@@ -44,7 +50,7 @@ module workspace
 		ALLOCATE(KY(sy:ey))
 		ALLOCATE(KZ(sz:ez))
 		if(RANK .eq. 0) then
-			write(6, '(a)') "Calculating spatial and k-space coordinates"
+			write(6, '(a)') "Calculating position and momentum space coordinates"
 		end if
 		call parallel_barrier
         call setupGXYZ
@@ -65,7 +71,7 @@ module workspace
 			ALLOCATE(QP_EZ(sx:ex,sy:ey,sz:ez))
 			call setupEXEYEZ
 		end if
-        GRID = 0.0d0
+        WS(1)%GRID = 0.0d0
         GRID_T1 = 0.0d0
 		TIME = 0.0d0
 	end subroutine
@@ -125,15 +131,15 @@ module workspace
 	    implicit none
 	    integer :: i, j ,k
 		do k = sz,ez
-		    GZ(k) = (k+local_k_offset-1)*DSPACE
+		    GZ(k) = (k+local_k_offset-1)*DSPACE-ZSHIFT
 		end do		
 
 		do j = sy,ey
-		    GY(j) = (j-1)*DSPACE
+		    GY(j) = (j-1)*DSPACE-YSHIFT
 		end do
 
 		do i = sx,ex
-		    GX(i) = (i-1)*DSPACE
+		    GX(i) = (i-1)*DSPACE-XSHIFT
 		end do
 	end subroutine
 

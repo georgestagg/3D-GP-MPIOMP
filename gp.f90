@@ -56,6 +56,9 @@ subroutine final_checks
     if (METHOD==1) then
         call run_checks_FFTW
     end if
+    if (METHOD==0) then
+        call run_checks_RK4
+    end if
 end subroutine
 
 subroutine simulate(steps,rt)
