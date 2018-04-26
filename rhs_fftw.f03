@@ -33,6 +33,12 @@ module rhs_FFTW
 				OMEGA = 0.0d0
 			end if
 		end if
+		if(FIELDS > 1) then
+			if(RANK .eq. 0) then
+				write(6,'(a)') "Warning: Multi-component superfluid not supported when using the split-step fourier method."
+				write(6,'(a)') "I'll just use the first one..."
+			end if
+		end if
 	end subroutine
 
 	subroutine FFTW_step(rt)

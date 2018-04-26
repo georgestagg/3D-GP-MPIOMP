@@ -4,10 +4,11 @@ module workspace
 
 	type :: computational_field
 		complex(C_DOUBLE_COMPLEX), pointer :: GRID(:,:,:)
+		complex(C_DOUBLE_COMPLEX), pointer :: GRID_T(:,:,:)
 	end type computational_field
 	type(computational_field),DIMENSION(:),POINTER :: WS
 
-	complex(C_DOUBLE_COMPLEX), pointer :: GRID_T1(:,:,:),GRID_T2(:,:,:),GRID_T3(:,:,:)
+	complex(C_DOUBLE_COMPLEX), pointer :: GRID_T1(:,:,:),GRID_T2(:,:,:)
 	complex*16, dimension(:,:,:), ALLOCATABLE :: DDI_K,GRID_E,QP_EX,QP_EY,QP_EZ
 	double precision, dimension(:), ALLOCATABLE :: GX,GY,GZ,KX,KY,KZ
 	double precision, dimension(:,:), ALLOCATABLE :: GG
@@ -17,6 +18,7 @@ module workspace
     contains
 	subroutine init_workspace
 		implicit none
+	    integer :: f
 		if(RANK .eq. 0) then
 			write(6, '(a)') "Allocating distributed workspace data"
 		end if
@@ -26,10 +28,14 @@ module workspace
 
         if(METHOD==0) then
         	call calc_local_idx_3DWithGhost(NX,NY,NZ,sx,ex,sy,ey,sz,ez)
-			ALLOCATE(WS(1)%GRID(sx:ex,sy:ey,sz:ez))
+			do f = 1,FIELDS
+				ALLOCATE(WS(f)%GRID(sx:ex,sy:ey,sz:ez))
+				ALLOCATE(WS(f)%GRID_T(sx:ex,sy:ey,sz:ez))
+				WS(f)%GRID = 0.0d0
+				WS(f)%GRID_T = 0.0d0
+			end do
 			ALLOCATE(GRID_T1(sx:ex,sy:ey,sz:ez))
 			ALLOCATE(GRID_T2(sx:ex,sy:ey,sz:ez))
-			ALLOCATE(GRID_T3(sx:ex,sy:ey,sz:ez))
 		else if (METHOD==1) then
 			call setup_local_allocation(NX,NY,NZ,WS(1)%GRID,GRID_T1)
 			call parallel_barrier
@@ -41,6 +47,7 @@ module workspace
 			ez = local_NZ
 			EDD_T1 = 1.0d0/(1.0d0-EDD)
 			EDD_T2 = EDD/(1.0d0-EDD)
+			WS(1)%GRID = 0.0d0
         end if
 		ALLOCATE(POT(sx:ex,sy:ey,sz:ez))
 		ALLOCATE(GX(sx:ex))
@@ -71,7 +78,6 @@ module workspace
 			ALLOCATE(QP_EZ(sx:ex,sy:ey,sz:ez))
 			call setupEXEYEZ
 		end if
-        WS(1)%GRID = 0.0d0
         GRID_T1 = 0.0d0
 		TIME = 0.0d0
 	end subroutine

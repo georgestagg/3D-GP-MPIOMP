@@ -5,71 +5,88 @@ module rhs_RK4
       implicit none
       if(initialCondType == 2) then
         if(RANK .eq. 0) then
-          write(6,'(a)') "Error: Highly non-equilibrium initialCondType is not supported with RK4"
+          write(6,'(a)') "Error: Highly non-equilibrium initialCondType is not supported with 3D block distribution."
           call finalize_parallel
           call exit(1)
         end if
       end if
     end subroutine
+    
     subroutine RK4_step(rt)
-        implicit none
-        integer :: rt,i,j,k
-        !OpenMP parallelised RK4
-        call halo_swap(WS(1)%GRID)
-        call RK4_gperhs(WS(1)%GRID, GRID_T1,rt)
-        !$OMP parallel do private (i,j,k) collapse(3)
-            do k = sz+1,ez-1
-                do j = sy+1,ey-1
-                    do i = sx+1,ex-1
-                        GRID_T2(i,j,k) = WS(1)%GRID(i,j,k) + 0.5d0*DT*GRID_T1(i,j,k)
-                        GRID_T3(i,j,k) = WS(1)%GRID(i,j,k) + DT*GRID_T1(i,j,k)/6.0d0
-                    end do
-                end do
-            end do
-        !$OMP end parallel do
+      implicit none
+      integer :: rt,f
+      do f = 1,FIELDS
+        call RK4_step_field(rt,WS(f)%GRID,WS(f)%GRID_T)
+      end do
 
-        call halo_swap(GRID_T2)
-        call RK4_gperhs(GRID_T2,GRID_T1,rt)
-        !$OMP parallel do private (i,j,k) collapse(3)
-            do k = sz+1,ez-1
-                do j = sy+1,ey-1
-                    do i = sx+1,ex-1
-                        GRID_T2(i,j,k) = WS(1)%GRID(i,j,k) + 0.5d0*DT*GRID_T1(i,j,k)
-                        GRID_T3(i,j,k) = GRID_T3(i,j,k) + DT*GRID_T1(i,j,k)/3.0d0
-                    end do
-                end do
-            end do
-        !$OMP end parallel do
+      do f = 1,FIELDS
+        WS(f)%GRID=WS(f)%GRID_T
+      end do
 
-        call halo_swap(GRID_T2)
-        call RK4_gperhs(GRID_T2,GRID_T1,rt)
-        !$OMP parallel do private (i,j,k) collapse(3)
-            do k = sz+1,ez-1
-                do j = sy+1,ey-1
-                    do i = sx+1,ex-1
-                        GRID_T2(i,j,k) = WS(1)%GRID(i,j,k) + DT*GRID_T1(i,j,k)
-                        GRID_T3(i,j,k) = GRID_T3(i,j,k) + DT*GRID_T1(i,j,k)/3.0d0
-                    end do
-                end do
-            end do
-        !$OMP end parallel do
+      !Renormalise WF after imaginary time decay
+      if(rt .eq. 0) then
+        do f = 1,FIELDS
+          call RK4_renormalise(WS(f)%GRID)
+        end do
+      end if
+    end subroutine
 
-        call halo_swap(GRID_T2)
-        call RK4_gperhs(GRID_T2,GRID_T1,rt)
-        !$OMP parallel do private (i,j,k) collapse(3)
-            do k = sz+1,ez-1
-                do j = sy+1,ey-1
-                    do i = sx+1,ex-1
-                        WS(1)%GRID(i,j,k) = GRID_T3(i,j,k) + DT*GRID_T1(i,j,k)/6.0d0
-                    end do
-                end do
-            end do
-        !$OMP end parallel do
+    subroutine RK4_step_field(rt,gt,gt_out)
+      implicit none
+      integer :: rt,i,j,k
+      complex*16, dimension(sx:ex,sy:ey,sz:ez) :: gt
+      complex*16, dimension(sx:ex,sy:ey,sz:ez) :: gt_out
+      !OpenMP parallelised RK4
+      call halo_swap(gt)
+      call RK4_gperhs(gt, GRID_T1,rt)
+      !$OMP parallel do private (i,j,k) collapse(3)
+          do k = sz+1,ez-1
+              do j = sy+1,ey-1
+                  do i = sx+1,ex-1
+                      GRID_T2(i,j,k) = gt(i,j,k) + 0.5d0*DT*GRID_T1(i,j,k)
+                      gt_out(i,j,k) = gt(i,j,k) + DT*GRID_T1(i,j,k)/6.0d0
+                  end do
+              end do
+          end do
+      !$OMP end parallel do
 
-        !Renormalise WF after imaginary time decay
-        if(rt .eq. 0) then
-          call RK4_renormalise
-        end if
+      call halo_swap(GRID_T2)
+      call RK4_gperhs(GRID_T2,GRID_T1,rt)
+      !$OMP parallel do private (i,j,k) collapse(3)
+          do k = sz+1,ez-1
+              do j = sy+1,ey-1
+                  do i = sx+1,ex-1
+                      GRID_T2(i,j,k) = gt(i,j,k) + 0.5d0*DT*GRID_T1(i,j,k)
+                      gt_out(i,j,k) = gt_out(i,j,k) + DT*GRID_T1(i,j,k)/3.0d0
+                  end do
+              end do
+          end do
+      !$OMP end parallel do
+
+      call halo_swap(GRID_T2)
+      call RK4_gperhs(GRID_T2,GRID_T1,rt)
+      !$OMP parallel do private (i,j,k) collapse(3)
+          do k = sz+1,ez-1
+              do j = sy+1,ey-1
+                  do i = sx+1,ex-1
+                      GRID_T2(i,j,k) = gt(i,j,k) + DT*GRID_T1(i,j,k)
+                      gt_out(i,j,k) = gt_out(i,j,k) + DT*GRID_T1(i,j,k)/3.0d0
+                  end do
+              end do
+          end do
+      !$OMP end parallel do
+
+      call halo_swap(GRID_T2)
+      call RK4_gperhs(GRID_T2,GRID_T1,rt)
+      !$OMP parallel do private (i,j,k) collapse(3)
+          do k = sz+1,ez-1
+              do j = sy+1,ey-1
+                  do i = sx+1,ex-1
+                      gt_out(i,j,k) = gt_out(i,j,k) + DT*GRID_T1(i,j,k)/6.0d0
+                  end do
+              end do
+          end do
+      !$OMP end parallel do
     end subroutine
 
     subroutine RK4_gperhs(gt,kk,rt)
@@ -340,13 +357,14 @@ module rhs_RK4
         end if
     end function
 
-    subroutine RK4_renormalise
+    subroutine RK4_renormalise(gt)
       implicit none
+      complex*16, dimension(sx:ex,sy:ey,sz:ez) :: gt
       include 'mpif.h'
       double precision :: local_norm,total_norm,local_pot_int,total_pot_int
 
-      GRID_T1(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1) = WS(1)%GRID(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1)*&
-                                                  conjg(WS(1)%GRID(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1))
+      GRID_T1(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1) = gt(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1)*&
+                                                  conjg(gt(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1))
 
       local_norm=sum(GRID_T1(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1))*DSPACE*DSPACE*DSPACE
       call MPI_Allreduce(local_norm, total_norm, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_FFTW,IERR)
@@ -357,7 +375,7 @@ module rhs_RK4
       local_pot_int=sum(GRID_T1(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1))*DSPACE*DSPACE*DSPACE
       call MPI_Allreduce(local_pot_int, total_pot_int, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_FFTW,IERR)
 
-      WS(1)%GRID(sx:ex,sy:ey,sz:ez) = WS(1)%GRID(sx:ex,sy:ey,sz:ez)/sqrt(total_norm)*sqrt(total_pot_int)
+      gt(sx:ex,sy:ey,sz:ez) = gt(sx:ex,sy:ey,sz:ez)/sqrt(total_norm)*sqrt(total_pot_int)
 
     end subroutine
 end module

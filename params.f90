@@ -10,7 +10,7 @@ module params
   double precision :: XSHIFT = 0.0d0
   double precision :: YSHIFT = 0.0d0
   double precision :: ZSHIFT = 0.0d0
-  
+
   double precision :: DSPACE = 0.2d0
   double precision :: DTSIZE = 0.01d0
 
@@ -28,7 +28,7 @@ module params
 
   !Multi-component parameters
   integer :: FIELDS = 1
-  !double precision :: FIELD_INTERACTIONS = reshape((/ 1, 2, 3, 4, 5, 6, 7, 8, 9 /), shape(array))
+  double precision, dimension(:,:),ALLOCATABLE :: FIELD_INTERACTIONS
 
   !Linearly/Rotating moving frame
   double precision :: VELX = 0.0d0
@@ -86,6 +86,17 @@ module params
   subroutine init_params
     IMPLICIT NONE
     ICRfilename = repeat(" ", 2048) !Clear memory so entire string is blank
+    call set_fields(FIELDS,reshape((/ 1.0d0 /), (/ 1, 1 /)))
     include 'params.in'
+  END subroutine
+
+  subroutine set_fields(N,F)
+    IMPLICIT NONE
+    integer :: N,stat
+    double precision :: F(:,:)
+    DEALLOCATE(FIELD_INTERACTIONS,STAT=stat)
+    ALLOCATE(FIELD_INTERACTIONS(N,N))
+    FIELD_INTERACTIONS = F
+    FIELDS = N
   END subroutine
 end module
