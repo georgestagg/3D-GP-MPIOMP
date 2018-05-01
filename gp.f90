@@ -61,13 +61,15 @@ subroutine final_checks
     end if
 end subroutine
 
-subroutine simulate(steps,rt)
+subroutine simulate(steps,set_rt)
     use output
     use rhs_RK4
     use rhs_FFTW
     implicit none
-    integer :: steps,rt
+    integer :: steps,set_rt
     double precision :: perc
+
+    RT = set_rt
 
     do cur_step = INITSSTEP, steps-1
         !Housekeeping
@@ -87,7 +89,7 @@ subroutine simulate(steps,rt)
         end if
 
         if (modulo(cur_step,DUMPWF) == 0) then
-            call dump_wavefunction(cur_step,rt)
+            call dump_wavefunction(cur_step)
         end if
 
         if(recalculatePot .and. rt == 1) then
@@ -96,9 +98,9 @@ subroutine simulate(steps,rt)
 
         !Time stepping routines
         if(METHOD==0) then
-            call RK4_step(rt)
+            call RK4_step
         else if (METHOD==1) then
-            call FFTW_step(rt)
+            call FFTW_step
         end if
         if(ABS(DOMEGADT) > 1e-14) then
             call eulerStepOmega

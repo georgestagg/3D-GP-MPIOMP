@@ -28,7 +28,7 @@ module parallel_FFTW
         call fftw_plan_with_nthreads(omp_get_num_threads())
     end subroutine
 
-    subroutine setup_local_allocation(NX,NY,NZ,GRID,GRID_T1)
+    subroutine setup_local_allocation_fftw(NX,NY,NZ,GRID,GRID_T1)
         implicit none
         integer,intent(in)  :: NX,NY,NZ
         complex(C_DOUBLE_COMPLEX),intent(out), pointer :: GRID(:,:,:),GRID_T1(:,:,:)
