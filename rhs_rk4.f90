@@ -43,7 +43,7 @@ module rhs_RK4
 		!Renormalise WF after imaginary time decay
 		if(RT .eq. 0) then
 			do f = 1,FLUIDS
-				call RK4_renormalise(WS%FLUID(f)%GRID,TMPWS(1)%FLUID(f)%GRID)
+				call RK4_renormalise_fluid(WS%FLUID(f)%GRID,TMPWS(1)%FLUID(f)%GRID)
 			end do
 		end if
 	end subroutine

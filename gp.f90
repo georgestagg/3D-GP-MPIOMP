@@ -1,5 +1,6 @@
 program gp
     use workspace
+    use init
     implicit none
     call init_params
     call init_parallel(RHSType)
@@ -49,7 +50,6 @@ program gp
 end PROGRAM gp
 
 subroutine final_checks
-    use output
     use rhs_RK4
     use rhs_FFTW
     implicit none
@@ -62,7 +62,7 @@ subroutine final_checks
 end subroutine
 
 subroutine simulate(steps,set_rt)
-    use output
+    use io
     use rhs_RK4
     use rhs_FFTW
     implicit none

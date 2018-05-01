@@ -1,4 +1,4 @@
-module output
+module io
 	use workspace
 	use netcdf
 	implicit none

@@ -67,10 +67,10 @@ module workspace
 			ALLOCATE(WS%FLUID(FLUIDS))
 			ALLOCATE(GG(FLUIDS,FLUIDS))
 			do f = 1,FLUIDS
-				call allocateCompGri(WS%FLUID(f))
-				call allocateCompGri(TMPWS(1)%FLUID(f))
-				call allocateCompGri(TMPWS(2)%FLUID(f))
-				call allocateCompGri(TMPWS(3)%FLUID(f))
+				call allocateCompGrid(WS%FLUID(f))
+				call allocateCompGrid(TMPWS(1)%FLUID(f))
+				call allocateCompGrid(TMPWS(2)%FLUID(f))
+				call allocateCompGrid(TMPWS(3)%FLUID(f))
 			end do
 		else if(RHSType == 2) then
 			ALLOCATE(WS%FLUID(1))
@@ -93,18 +93,18 @@ module workspace
 			ALLOCATE(TMPWS(4))
 			do f = 1,FLUIDS
 				call allocateCompGrid(WS%FLUID(f))
-				call allocateCompGri(TMPWS(1)%FLUID(f))
-				call allocateCompGri(TMPWS(2)%FLUID(f))
-				call allocateCompGri(TMPWS(3)%FLUID(f))
+				call allocateCompGrid(TMPWS(1)%FLUID(f))
+				call allocateCompGrid(TMPWS(2)%FLUID(f))
+				call allocateCompGrid(TMPWS(3)%FLUID(f))
 			end do
-			call allocateCompGri(TMPWS(4)%FLUID(1)) !tmp variable for quasi-periodic calcs - shared over fluids
+			call allocateCompGrid(TMPWS(4)%FLUID(1)) !tmp variable for quasi-periodic calcs - shared over fluids
 			if (INC_MAG_FIELDS) then
 				ALLOCATE(WS%MAGNETIC(3))
 				do m = 1,3
 					call allocateCompGrid(WS%MAGNETIC(m))
-					call allocateCompGri(TMPWS(1)%MAGNETIC(m))
-					call allocateCompGri(TMPWS(2)%MAGNETIC(m))
-					call allocateCompGri(TMPWS(3)%MAGNETIC(m))
+					call allocateCompGrid(TMPWS(1)%MAGNETIC(m))
+					call allocateCompGrid(TMPWS(2)%MAGNETIC(m))
+					call allocateCompGrid(TMPWS(3)%MAGNETIC(m))
 				end do
 			end if
 		end if
@@ -414,31 +414,4 @@ module workspace
 		type(workspace_t) :: WSO
 		WSO = workspace_div_WS_SCALARC(WS,SCC)
 	end function
-
-subroutine initCond
-	implicit none
-	integer :: f
-	if(RANK .eq. 0) then
-		write (6, *) 'Applying initial condition...'
-	end if
-	TIME = 0.0d0
-	if(initialCondType .eq. 0) then
-		do f = 1,FLUIDS
-			WS%FLUID(f)%GRID = 1.0d0
-		end do
-	else if (initialCondType .eq. 1) then
-		do f = 1,FLUIDS
-			call makeRandomPhase(WS%FLUID(f))
-		end do
-	else if (initialCondType .eq. 2) then
-		call makeNonEquibPhase
-	else if (initialCondType .eq. 3) then
-		call read_wf_file(ICRfilename)
-	else
-		do f = 1,FLUIDS
-			WS%FLUID(f)%GRID = 1.0d0
-		end do
-	end if
-end subroutine
-
 end module
