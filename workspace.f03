@@ -4,14 +4,14 @@ module workspace
 
 	!Dynamic number of computational grids
 	type computational_field
+		complex(C_DOUBLE_COMPLEX), pointer :: GRID(:,:,:)
+		real(C_DOUBLE), pointer :: GRID_R(:,:,:)
 	end type
 	type, extends(computational_field) :: fluid_field
-		complex(C_DOUBLE_COMPLEX), pointer :: GRID(:,:,:) !Fluid wavefunction
-		complex(C_DOUBLE_COMPLEX), pointer :: QP_E(:,:,:,:) !Quasi-periodic variables
-		complex(C_DOUBLE_COMPLEX), pointer :: DDI_K(:,:,:) !Dipole-dipole interaction variables
+		complex(C_DOUBLE_COMPLEX), pointer :: QP_E(:,:,:,:)!Quasi-periodic variables
+		complex(C_DOUBLE_COMPLEX), pointer :: DDI_K(:,:,:)!Dipole-dipole interaction variables
 	end type
 	type, extends(computational_field) :: magnetic_field
-		real(C_DOUBLE), pointer :: GRID(:,:,:)
 	end type
 
 	type workspace_t
@@ -22,25 +22,6 @@ module workspace
 	type cart_shift_t
 		integer :: rs,rd
 	end type
-
-	interface operator (+)
-		procedure workspace_add_WS_WS
-	end interface
-
-	interface operator (*)
-		procedure workspace_mult_WS_WS
-		procedure workspace_mult_WS_SCALAR
-		procedure workspace_mult_WS_SCALARC
-		procedure workspace_mult_SCALAR_WS
-		procedure workspace_mult_SCALARC_WS
-	end interface
-
-	interface operator (/)
-		procedure workspace_div_WS_SCALAR
-		procedure workspace_div_WS_SCALARC
-		procedure workspace_div_SCALAR_WS
-		procedure workspace_div_SCALARC_WS
-	end interface
 
 	type(workspace_t) :: WS
 	type(workspace_t), pointer :: TMPWS(:)
@@ -56,16 +37,21 @@ module workspace
 	subroutine init_workspace
 		implicit none
 		integer :: f,m
-		if(RANK .eq. 0) then
-			write(6, '(a)') "Allocating distributed workspace data"
-		end if
 		if(RHSType == 0 .or. RHSType == 1) then
 			call calc_local_idx_3DWithGhost(NX,NY,NZ,sx,ex,sy,ey,sz,ez)
-			ALLOCATE(cart_shift(0:2))
 			call setupCartGrid
+			if(RANK .eq. 0) then
+				write(6, '(a)') "Allocating distributed workspace data"
+			end if
 			ALLOCATE(TMPWS(3))
+
 			ALLOCATE(WS%FLUID(FLUIDS))
+			ALLOCATE(TMPWS(1)%FLUID(FLUIDS))
+			ALLOCATE(TMPWS(2)%FLUID(FLUIDS))
+			ALLOCATE(TMPWS(3)%FLUID(FLUIDS))
+			
 			ALLOCATE(GG(FLUIDS,FLUIDS))
+
 			do f = 1,FLUIDS
 				call allocateCompGrid(WS%FLUID(f))
 				call allocateCompGrid(TMPWS(1)%FLUID(f))
@@ -73,9 +59,14 @@ module workspace
 				call allocateCompGrid(TMPWS(3)%FLUID(f))
 			end do
 		else if(RHSType == 2) then
-			ALLOCATE(WS%FLUID(1))
+			if(RANK .eq. 0) then
+				write(6, '(a)') "Allocating distributed FFTW workspace data"
+			end if
 			ALLOCATE(TMPWS(1))
+
+			ALLOCATE(WS%FLUID(1))
 			ALLOCATE(TMPWS(1)%FLUID(1))
+
 			call setup_local_allocation_fftw(NX,NY,NZ,WS%FLUID(1)%GRID,TMPWS(1)%FLUID(1)%GRID)
 			call parallel_barrier
 			sx = 1
@@ -86,11 +77,20 @@ module workspace
 			ez = local_NZ
 		else if(RHSType == 3) then
 			call calc_local_idx_3DWithGhost(NX,NY,NZ,sx,ex,sy,ey,sz,ez)
-			ALLOCATE(cart_shift(0:2))
 			call setupCartGrid
-			ALLOCATE(WS%FLUID(FLUIDS))
-			ALLOCATE(GG(FLUIDS,FLUIDS))
+			if(RANK .eq. 0) then
+				write(6, '(a)') "Allocating distributed fluid field data"
+			end if
 			ALLOCATE(TMPWS(4))
+
+			ALLOCATE(WS%FLUID(FLUIDS))
+			ALLOCATE(TMPWS(1)%FLUID(FLUIDS))
+			ALLOCATE(TMPWS(2)%FLUID(FLUIDS))
+			ALLOCATE(TMPWS(3)%FLUID(FLUIDS))
+			ALLOCATE(TMPWS(4)%FLUID(1))
+
+			ALLOCATE(GG(FLUIDS,FLUIDS))
+
 			do f = 1,FLUIDS
 				call allocateCompGrid(WS%FLUID(f))
 				call allocateCompGrid(TMPWS(1)%FLUID(f))
@@ -98,6 +98,10 @@ module workspace
 				call allocateCompGrid(TMPWS(3)%FLUID(f))
 			end do
 			call allocateCompGrid(TMPWS(4)%FLUID(1)) !tmp variable for quasi-periodic calcs - shared over fluids
+
+			if(RANK .eq. 0) then
+				write(6, '(a)') "Allocating distributed magnetic field data"
+			end if
 			if (INC_MAG_FIELDS) then
 				ALLOCATE(WS%MAGNETIC(3))
 				do m = 1,3
@@ -157,7 +161,7 @@ module workspace
 		class is (fluid_field)
 			ALLOCATE(field%GRID(sx:ex,sy:ey,sz:ez))
 		class is (magnetic_field)
-			ALLOCATE(field%GRID(sx:ex,sy:ey,sz:ez))
+			ALLOCATE(field%GRID_R(sx:ex,sy:ey,sz:ez))
 		end select
 	end subroutine
 
@@ -181,6 +185,10 @@ module workspace
 	subroutine setupCartGrid
 		implicit none
 		include 'mpif.h'
+		if(RANK .eq. 0) then
+			write(6, '(a)') "Pre-calculating MPI neighbours"
+		end if
+		ALLOCATE(cart_shift(0:2))
 		call MPI_Cart_shift(MPI_COMM_GRID,0,1,cart_shift(0)%rs,cart_shift(0)%rd,IERR)
 		call MPI_Cart_shift(MPI_COMM_GRID,1,1,cart_shift(1)%rs,cart_shift(1)%rd,IERR)
 		call MPI_Cart_shift(MPI_COMM_GRID,2,1,cart_shift(2)%rs,cart_shift(2)%rd,IERR)
@@ -272,146 +280,4 @@ module workspace
 			end if
 		end do
 	end subroutine
-
-	!The remaining functions are operator overloading of various types
-	function workspace_add_WS_WS(WS1,WS2) result (WSO)
-		implicit none
-		integer :: f,i,j,k
-		type(workspace_t), intent(in) :: WS1,WS2
-		type(workspace_t) :: WSO
-		!$OMP parallel do private (f,i,j,k) collapse(4)
-		do f = 1,FLUIDS
-			do k = sz+1,ez-1
-				do j = sy+1,ey-1
-					do i = sx+1,ex-1
-						WSO%FLUID(f)%GRID(i,j,k) = WS1%FLUID(f)%GRID(i,j,k)+WS2%FLUID(f)%GRID(i,j,k)
-					end do
-				end do
-			end do
-		end do
-		!$OMP end parallel do
-	end function
-
-	function workspace_mult_WS_WS(WS1,WS2) result (WSO)
-		implicit none
-		integer :: f,i,j,k
-		type(workspace_t), intent(in) :: WS1,WS2
-		type(workspace_t) :: WSO
-		!$OMP parallel do private (f,i,j,k) collapse(4)
-		do f = 1,FLUIDS
-			do k = sz+1,ez-1
-				do j = sy+1,ey-1
-					do i = sx+1,ex-1
-						WSO%FLUID(f)%GRID(i,j,k) = WS1%FLUID(f)%GRID(i,j,k)*WS2%FLUID(f)%GRID(i,j,k)
-					end do
-				end do
-			end do
-		end do
-		!$OMP end parallel do
-	end function
-
-	function workspace_mult_WS_SCALAR(WS,SC) result (WSO)
-		implicit none
-		integer :: f,i,j,k
-		type(workspace_t), intent(in) :: WS
-		real(C_DOUBLE), intent(in) :: SC
-		type(workspace_t) :: WSO
-		!$OMP parallel do private (f,i,j,k) collapse(4)
-		do f = 1,FLUIDS
-			do k = sz+1,ez-1
-				do j = sy+1,ey-1
-					do i = sx+1,ex-1
-						WSO%FLUID(f)%GRID(i,j,k) = WS%FLUID(f)%GRID(i,j,k)*SC
-					end do
-				end do
-			end do
-		end do
-		!$OMP end parallel do
-	end function
-
-	function workspace_mult_WS_SCALARC(WS,SCC) result (WSO)
-		implicit none
-		integer :: f,i,j,k
-		type(workspace_t), intent(in) :: WS
-		complex(C_DOUBLE_COMPLEX), intent(in) :: SCC
-		type(workspace_t) :: WSO
-		!$OMP parallel do private (f,i,j,k) collapse(4)
-		do f = 1,FLUIDS
-			do k = sz+1,ez-1
-				do j = sy+1,ey-1
-					do i = sx+1,ex-1
-						WSO%FLUID(f)%GRID(i,j,k) = WS%FLUID(f)%GRID(i,j,k)*SCC
-					end do
-				end do
-			end do
-		end do
-		!$OMP end parallel do
-	end function
-
-	function workspace_div_WS_SCALAR(WS,SC) result (WSO)
-		implicit none
-		integer :: f,i,j,k
-		type(workspace_t), intent(in) :: WS
-		real(C_DOUBLE), intent(in) :: SC
-		type(workspace_t) :: WSO
-		!$OMP parallel do private (f,i,j,k) collapse(4)
-		do f = 1,FLUIDS
-			do k = sz+1,ez-1
-				do j = sy+1,ey-1
-					do i = sx+1,ex-1
-						WSO%FLUID(f)%GRID(i,j,k) = WS%FLUID(f)%GRID(i,j,k)/SC
-					end do
-				end do
-			end do
-		end do
-		!$OMP end parallel do
-	end function
-
-	function workspace_div_WS_SCALARC(WS,SCC) result (WSO)
-		implicit none
-		integer :: f,i,j,k
-		type(workspace_t), intent(in) :: WS
-		complex(C_DOUBLE_COMPLEX), intent(in) :: SCC
-		type(workspace_t) :: WSO
-		!$OMP parallel do private (f,i,j,k) collapse(4)
-		do f = 1,FLUIDS
-			do k = sz+1,ez-1
-				do j = sy+1,ey-1
-					do i = sx+1,ex-1
-						WSO%FLUID(f)%GRID(i,j,k) = WS%FLUID(f)%GRID(i,j,k)/SCC
-					end do
-				end do
-			end do
-		end do
-		!$OMP end parallel do
-	end function
-
-	function workspace_mult_SCALAR_WS(SC,WS) result (WSO)
-		implicit none
-		type(workspace_t), intent(in) :: WS
-		real(C_DOUBLE), intent(in) :: SC
-		type(workspace_t) :: WSO
-		WSO = workspace_mult_WS_SCALAR(WS,SC)
-	end function
-	function workspace_mult_SCALARC_WS(SCC,WS) result (WSO)
-		implicit none
-		type(workspace_t), intent(in) :: WS
-		complex(C_DOUBLE_COMPLEX), intent(in) :: SCC
-		type(workspace_t) :: WSO
-		WSO = workspace_mult_WS_SCALARC(WS,SCC)
-	end function
-	function workspace_div_SCALAR_WS(SC,WS) result (WSO)
-		implicit none
-		type(workspace_t), intent(in) :: WS
-		real(C_DOUBLE), intent(in) :: SC
-		type(workspace_t) :: WSO
-		WSO = workspace_div_WS_SCALAR(WS,SC)
-	end function
-	function workspace_div_SCALARC_WS(SCC,WS) result (WSO)
-		implicit none
-		type(workspace_t), intent(in) :: WS
-		complex(C_DOUBLE_COMPLEX), intent(in) :: SCC
-		type(workspace_t) :: WSO
-		WSO = workspace_div_WS_SCALARC(WS,SCC)
-	end function
 end module
