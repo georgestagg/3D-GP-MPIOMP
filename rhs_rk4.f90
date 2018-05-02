@@ -111,7 +111,7 @@ module rhs_RK4
 		type(workspace_t), intent(out) :: ws_out
 		integer :: f,m
 		do f = 1,FLUIDS
-			call RK4_calc_RHS_Fluid(f,ws_in%FLUID(f),ws_out%FLUID(f))
+			call RK4_calc_RHS_Fluid(f,ws_in,ws_out)
 		end do
 		if (INC_MAG_FIELDS) then
 			do m = 1,3
@@ -133,37 +133,49 @@ module rhs_RK4
 		end do
 		!$OMP end parallel do
 	end subroutine
-	subroutine RK4_calc_RHS_Fluid(f,field_in,field_out)
+	subroutine RK4_calc_RHS_Fluid(f,ws_in,ws_out)
 		implicit none
-		integer :: f,i,j,k
-		class(fluid_field), intent(in) :: field_in, field_out
+		integer :: f,i,j,k,p
+		type(workspace_t), intent(in) :: ws_in
+		type(workspace_t), intent(out) :: ws_out
 
 		if (RHSType .eq. 0) then
 			!$OMP parallel do private (i,j,k) collapse(3)
 			do k = sz+1,ez-1
 				do j = sy+1,ey-1
 					do i = sx+1,ex-1
-						field_out%GRID(i,j,k) = -0.5d0*laplacian(field_in,i,j,k)&
-							+ field_in%GRID(i,j,k)*field_in%GRID(i,j,k)*CONJG(field_in%GRID(i,j,k))&
-							+ POT(i,j,k)*field_in%GRID(i,j,k) - field_in%GRID(i,j,k)&
-							+ VELX*EYE*ddx(field_in,i,j,k)&
-							+ VELY*EYE*ddy(field_in,i,j,k)&
-							+ VELZ*EYE*ddz(field_in,i,j,k)&
-							+ OMEGA*EYE*(GX(i)*ddy(field_in,i,j,k)-GY(j)*ddx(field_in,i,j,k))
+						ws_out%FLUID(f)%GRID(i,j,k) = -0.5d0*laplacian(ws_in%FLUID(f),i,j,k)&
+							+ POT(i,j,k)*ws_in%FLUID(f)%GRID(i,j,k) - ws_in%FLUID(f)%GRID(i,j,k)&
+							+ VELX*EYE*ddx(ws_in%FLUID(f),i,j,k)&
+							+ VELY*EYE*ddy(ws_in%FLUID(f),i,j,k)&
+							+ VELZ*EYE*ddz(ws_in%FLUID(f),i,j,k)&
+							+ OMEGA*EYE*(GX(i)*ddy(ws_in%FLUID(f),i,j,k)-GY(j)*ddx(ws_in%FLUID(f),i,j,k))
 					end do
 				end do
 			end do
 			!$OMP end parallel do
+			do p = 1,FLUIDS
+				!$OMP parallel do private (i,j,k) collapse(3)
+				do k = sz+1,ez-1
+					do j = sy+1,ey-1
+						do i = sx+1,ex-1
+							ws_out%FLUID(f)%GRID(i,j,k) = ws_out%FLUID(f)%GRID(i,j,k) +&
+								GG(f,p)*ws_in%FLUID(p)%GRID(i,j,k)*CONJG(ws_in%FLUID(p)%GRID(i,j,k))*ws_in%FLUID(f)%GRID(i,j,k)
+						end do
+					end do
+				end do
+				!$OMP end parallel do
+			end do
 		end if
 		if (RHSType .eq. 1) then
 			!$OMP parallel do private (i,j,k) collapse(3)
 			do k = sz+1,ez-1
 				do j = sy+1,ey-1
 					do i = sx+1,ex-1
-						field_out%GRID(i,j,k) = -0.5d0*laplacian(field_in,i,j,k)&
-							+ harm_osc_C*field_in%GRID(i,j,k)*field_in%GRID(i,j,k)*CONJG(field_in%GRID(i,j,k))&
-							+ POT(i,j,k)*field_in%GRID(i,j,k) - harm_osc_mu*field_in%GRID(i,j,k)&
-							+ OMEGA*EYE*(GX(i)*ddy(field_in,i,j,k)-GY(j)*ddx(field_in,i,j,k))
+						ws_out%FLUID(f)%GRID(i,j,k) = -0.5d0*laplacian(ws_in%FLUID(f),i,j,k)&
+							+ harm_osc_C*ws_in%FLUID(f)%GRID(i,j,k)*ws_in%FLUID(f)%GRID(i,j,k)*CONJG(ws_in%FLUID(f)%GRID(i,j,k))&
+							+ POT(i,j,k)*ws_in%FLUID(f)%GRID(i,j,k) - harm_osc_mu*ws_in%FLUID(f)%GRID(i,j,k)&
+							+ OMEGA*EYE*(GX(i)*ddy(ws_in%FLUID(f),i,j,k)-GY(j)*ddx(ws_in%FLUID(f),i,j,k))
 					end do
 				end do
 			end do
@@ -174,7 +186,7 @@ module rhs_RK4
 			do k = sz,ez
 				do j = sy,ey
 					do i = sx,ex
-						TMPWS(4)%FLUID(1)%GRID(i,j,k) = CONJG(WS%FLUID(f)%QP_E(i,j,k,1))*field_in%GRID(i,j,k)
+						TMPWS(4)%FLUID(1)%GRID(i,j,k) = CONJG(WS%FLUID(f)%QP_E(i,j,k,1))*ws_in%FLUID(f)%GRID(i,j,k)
 					end do
 				end do
 			end do
@@ -183,8 +195,8 @@ module rhs_RK4
 			do k = sz+1,ez-1
 				do j = sy+1,ey-1
 					do i = sx+1,ex-1
-						field_out%GRID(i,j,k)=field_in%GRID(i,j,k)*field_in%GRID(i,j,k)*CONJG(field_in%GRID(i,j,k))&
-							-field_in%GRID(i,j,k)-WS%FLUID(f)%QP_E(i,j,k,1)*d2dx2(TMPWS(4)%FLUID(1),i,j,k)
+						ws_out%FLUID(f)%GRID(i,j,k)= -ws_in%FLUID(f)%GRID(i,j,k)-WS%FLUID(f)%QP_E(i,j,k,1)&
+							*d2dx2(TMPWS(4)%FLUID(1),i,j,k)
 					end do
 				end do
 			end do
@@ -193,7 +205,7 @@ module rhs_RK4
 			do k = sz,ez
 				do j = sy,ey
 					do i = sx,ex
-						TMPWS(4)%FLUID(1)%GRID(i,j,k) = CONJG(WS%FLUID(f)%QP_E(i,j,k,2))*field_in%GRID(i,j,k)
+						TMPWS(4)%FLUID(1)%GRID(i,j,k) = CONJG(WS%FLUID(f)%QP_E(i,j,k,2))*ws_in%FLUID(f)%GRID(i,j,k)
 					end do
 				end do
 			end do
@@ -202,7 +214,7 @@ module rhs_RK4
 			do k = sz+1,ez-1
 				do j = sy+1,ey-1
 					do i = sx+1,ex-1
-						field_out%GRID(i,j,k) = field_out%GRID(i,j,k)-WS%FLUID(f)%QP_E(i,j,k,2)&
+						ws_out%FLUID(f)%GRID(i,j,k) = ws_out%FLUID(f)%GRID(i,j,k)-WS%FLUID(f)%QP_E(i,j,k,2)&
 							*d2dy2(TMPWS(4)%FLUID(1),i,j,k)
 					end do
 				end do
@@ -212,7 +224,7 @@ module rhs_RK4
 			do k = sz,ez
 				do j = sy,ey
 					do i = sx,ex
-						TMPWS(4)%FLUID(1)%GRID(i,j,k) = CONJG(WS%FLUID(f)%QP_E(i,j,k,3))*field_in%GRID(i,j,k)
+						TMPWS(4)%FLUID(1)%GRID(i,j,k) = CONJG(WS%FLUID(f)%QP_E(i,j,k,3))*ws_in%FLUID(f)%GRID(i,j,k)
 					end do
 				end do
 			end do
@@ -221,18 +233,32 @@ module rhs_RK4
 			do k = sz+1,ez-1
 				do j = sy+1,ey-1
 					do i = sx+1,ex-1
-						field_out%GRID(i,j,k) = field_out%GRID(i,j,k)-WS%FLUID(f)%QP_E(i,j,k,3)&
+						ws_out%FLUID(f)%GRID(i,j,k) = ws_out%FLUID(f)%GRID(i,j,k)-WS%FLUID(f)%QP_E(i,j,k,3)&
 							*d2dz2(TMPWS(4)%FLUID(1),i,j,k)
 					end do
 				end do
 			end do
 			!$OMP end parallel do
+			
+			do p = 1,FLUIDS
+				!$OMP parallel do private (i,j,k) collapse(3)
+				do k = sz+1,ez-1
+					do j = sy+1,ey-1
+						do i = sx+1,ex-1
+							ws_out%FLUID(f)%GRID(i,j,k) = ws_out%FLUID(f)%GRID(i,j,k)&
+								+GG(f,p)*ws_in%FLUID(p)%GRID(i,j,k)*CONJG(ws_in%FLUID(p)%GRID(i,j,k))*ws_in%FLUID(f)%GRID(i,j,k)
+						end do
+					end do
+				end do
+				!$OMP end parallel do
+			end do
+
 		end if
 		!$OMP parallel do private (i,j,k) collapse(3)
 		do k = sz+1,ez-1
 			do j = sy+1,ey-1
 				do i = sx+1,ex-1
-					field_out%GRID(i,j,k)=field_out%GRID(i,j,k)/(EYE-GAMMAC)
+					ws_out%FLUID(f)%GRID(i,j,k)=ws_out%FLUID(f)%GRID(i,j,k)/(EYE-GAMMAC)
 				end do
 			end do
 		end do
