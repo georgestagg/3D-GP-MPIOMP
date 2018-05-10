@@ -14,11 +14,10 @@ gridz = ncread(fname,'gz');
 real = ncread(fname,'fluid_real');
 imag = ncread(fname,'fluid_imag');
 potential = ncread(fname,'pot');
-real = squeeze(real(2,:,:,:));
-imag = squeeze(imag(2,:,:,:));
 psi = real + 1i.*imag;
 %permute data to matlab's expected (y,x,z)
-psi = permute(psi,[2,1,3]);
+psi = permute(psi,[1,3,2,4]);
+psi = squeeze(psi);
 potential = permute(potential,[2,1,3]);
 fclose('all');
 end

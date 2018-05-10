@@ -7,36 +7,6 @@ subroutine eulerStepOmega
 	end if
 end subroutine
 
-subroutine makeRandomPhase(field)
-	use workspace
-	implicit none
-	class(fluid_field) :: field
-	double precision :: r1, r2
-	integer :: i, j, k, n
-	integer, dimension(:), allocatable :: seed
-
-	call RANDOM_SEED(size = n)
-	allocate(seed(n))
-	seed = RANK
-	call RANDOM_SEED(PUT = seed)
-
-	if(RANK .eq. 0) then
-		write (6, *) ' Imposing a random IC...'
-	end if
-
-	!$OMP parallel do private (i,j,k) collapse(3)
-	do k = sz,ez
-		do j = sy,ey
-			do i = sx,ex
-				call random_number(r1)
-				call random_number(r2)
-				field%GRID(i,j,k) = r1*exp(2.0*PI*EYE*r2)
-			end do
-		end do
-	end do
-	!$OMP end parallel do
-end subroutine
-
 subroutine makeNonEquibPhase
 	use workspace
 	implicit none

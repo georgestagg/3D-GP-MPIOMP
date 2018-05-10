@@ -9,7 +9,7 @@ endif
 
 all: $(PROGRAMS)
 
-gp: params.o parallel_3dwg.o parallel_fftw.o parallel.o workspace.o potential.o output.o init.o utils.o rhs_rk4.o rhs_fftw.o
+gp: params.o parallel_3dwg.o parallel_fftw.o parallel.o workspace.o potential.o output.o init.o utils.o derivs.o rhs_rk4.o rhs_fftw.o
 
 %: %.o
 	$(FC) $(FCFLAGS) -o $@ $^ $(LDFLAGS)

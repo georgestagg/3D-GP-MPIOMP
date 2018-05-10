@@ -28,7 +28,7 @@ module params
 
   !Multi-component parameters
   integer :: FLUIDS = 1
-  double precision, dimension(:,:),ALLOCATABLE :: FLUID_INTERACTIONS
+  double precision, dimension(:,:),ALLOCATABLE :: GG
   logical :: INC_MAG_FIELDS = .false.
 
   !Linearly/Rotating moving frame
@@ -87,7 +87,7 @@ module params
   subroutine init_params
     IMPLICIT NONE
     ICRfilename = repeat(" ", 2048) !Clear memory so entire string is blank
-    call set_fluid_interactions(FLUIDS,reshape((/ 1.0d0 /), (/ 1, 1 /)))
+    call set_fluid_interactions(1,reshape((/ 1.0d0 /), (/ 1, 1 /)))
     include 'params.in'
   END subroutine
 
@@ -95,9 +95,9 @@ module params
     IMPLICIT NONE
     integer :: N,stat
     double precision :: F(:,:)
-    DEALLOCATE(FLUID_INTERACTIONS,STAT=stat)
-    ALLOCATE(FLUID_INTERACTIONS(N,N))
-    FLUID_INTERACTIONS = F
+    DEALLOCATE(GG,STAT=stat)
+    ALLOCATE(GG(N,N))
+    GG = F
     FLUIDS = N
   END subroutine
 end module

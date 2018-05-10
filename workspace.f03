@@ -1,7 +1,6 @@
 module workspace
 	use params
 	use parallel
-
 	!Dynamic number of computational grids
 	type computational_field
 		complex(C_DOUBLE_COMPLEX), pointer :: GRID(:,:,:)
@@ -29,7 +28,6 @@ module workspace
 	!System-wide globals
 	type(cart_shift_t),pointer :: cart_shift(:)
 	real(C_DOUBLE), dimension(:,:,:), allocatable :: POT
-	real(C_DOUBLE), dimension(:,:), allocatable :: GG
 	real(C_DOUBLE), dimension(:), allocatable :: GX,GY,GZ,KX,KY,KZ
 	integer :: sx,sy,sz,ex,ey,ez,cur_step,RT
 	double precision :: TIME,DKSPACE,EDD_T1,EDD_T2
@@ -49,8 +47,6 @@ module workspace
 			ALLOCATE(TMPWS(1)%FLUID(FLUIDS))
 			ALLOCATE(TMPWS(2)%FLUID(FLUIDS))
 			ALLOCATE(TMPWS(3)%FLUID(FLUIDS))
-			
-			ALLOCATE(GG(FLUIDS,FLUIDS))
 
 			do f = 1,FLUIDS
 				call allocateCompGrid(WS%FLUID(f))
@@ -88,8 +84,6 @@ module workspace
 			ALLOCATE(TMPWS(2)%FLUID(FLUIDS))
 			ALLOCATE(TMPWS(3)%FLUID(FLUIDS))
 			ALLOCATE(TMPWS(4)%FLUID(1))
-
-			ALLOCATE(GG(FLUIDS,FLUIDS))
 
 			do f = 1,FLUIDS
 				call allocateCompGrid(WS%FLUID(f))
