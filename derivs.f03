@@ -123,24 +123,30 @@ contains
 			BC = field_in%GRID(ii,jj,kk)
 			!Quasi-periodic fluid field
 			if(i == NX+1 .and. BCX==3) then
-			  BC = BC*exp(EYE*PI*NVORTZ*GY(jj)/((NY-1)*DSPACE)-EYE*PI*NVORTY*GZ(kk)/((NZ-1)*DSPACE))
+			  BC = BC*exp(EYE*PI*NVORTALL(3,field_in%field_number)*GY(jj)/((NY-1)*DSPACE)&
+			              -EYE*PI*NVORTALL(2,field_in%field_number)*GZ(kk)/((NZ-1)*DSPACE))
 			end if
 			if(i == 0 .and. BCX==3) then
-			  BC =BC/exp(EYE*PI*NVORTZ*GY(jj)/((NY-1)*DSPACE)-EYE*PI*NVORTY*GZ(kk)/((NZ-1)*DSPACE))
+			  BC =BC/exp(EYE*PI*NVORTALL(3,field_in%field_number)*GY(jj)/((NY-1)*DSPACE)&
+			             -EYE*PI*NVORTALL(2,field_in%field_number)*GZ(kk)/((NZ-1)*DSPACE))
 			end if
 			if(j == NY+1 .and. BCY==3) then
-			  BC = BC*exp(-EYE*PI*NVORTZ*GX(ii)/((NX-1)*DSPACE)+EYE*PI*NVORTX*GZ(kk)/((NZ-1)*DSPACE))
+			  BC = BC*exp(-EYE*PI*NVORTALL(3,field_in%field_number)*GX(ii)/((NX-1)*DSPACE)&
+			              +EYE*PI*NVORTALL(1,field_in%field_number)*GZ(kk)/((NZ-1)*DSPACE))
 			end if
 			if(j == 0 .and. BCY==3) then
-			  BC = BC/exp(-EYE*PI*NVORTZ*GX(ii)/((NX-1)*DSPACE)+EYE*PI*NVORTX*GZ(kk)/((NZ-1)*DSPACE))
+			  BC = BC/exp(-EYE*PI*NVORTALL(3,field_in%field_number)*GX(ii)/((NX-1)*DSPACE)&
+			              +EYE*PI*NVORTALL(1,field_in%field_number)*GZ(kk)/((NZ-1)*DSPACE))
 			end if
 			if(k == NZ+1 .and. BCZ==3) then
-			  BC = BC*exp(EYE*PI*NVORTY*GX(ii)/((NX-1)*DSPACE)-EYE*PI*NVORTX*GY(jj)/((NY-1)*DSPACE)&
-										+EYE*PI*NVORTX*NVORTY)
+			  BC = BC*exp(EYE*PI*NVORTALL(2,field_in%field_number)*GX(ii)/((NX-1)*DSPACE)&
+			              -EYE*PI*NVORTALL(1,field_in%field_number)*GY(jj)/((NY-1)*DSPACE)&
+						  +EYE*PI*NVORTALL(1,field_in%field_number)*NVORTALL(2,field_in%field_number))
 			end if
 			if(k == 0 .and. BCZ==3) then
-			  BC = BC/exp(EYE*PI*NVORTY*GX(ii)/((NX-1)*DSPACE)-EYE*PI*NVORTX*GY(jj)/((NY-1)*DSPACE)&
-										+EYE*PI*NVORTX*NVORTY)
+			  BC = BC/exp(EYE*PI*NVORTALL(2,field_in%field_number)*GX(ii)/((NX-1)*DSPACE)&
+			              -EYE*PI*NVORTALL(1,field_in%field_number)*GY(jj)/((NY-1)*DSPACE)&
+						  +EYE*PI*NVORTALL(1,field_in%field_number)*NVORTALL(2,field_in%field_number))
 			end if
 		end select
 	end function

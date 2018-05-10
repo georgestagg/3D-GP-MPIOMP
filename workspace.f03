@@ -5,6 +5,7 @@ module workspace
 	type computational_field
 		complex(C_DOUBLE_COMPLEX), pointer :: GRID(:,:,:)
 		real(C_DOUBLE), pointer :: GRID_R(:,:,:)
+		integer :: field_number
 	end type
 	type, extends(computational_field) :: fluid_field
 		complex(C_DOUBLE_COMPLEX), pointer :: QP_E(:,:,:,:)!Quasi-periodic variables
@@ -53,6 +54,11 @@ module workspace
 				call allocateCompGrid(TMPWS(1)%FLUID(f))
 				call allocateCompGrid(TMPWS(2)%FLUID(f))
 				call allocateCompGrid(TMPWS(3)%FLUID(f))
+
+				WS%FLUID(f)%field_number = f
+				TMPWS(1)%FLUID(f)%field_number = f
+				TMPWS(2)%FLUID(f)%field_number = f
+				TMPWS(3)%FLUID(f)%field_number = f
 			end do
 		else if(RHSType == 2) then
 			if(RANK .eq. 0) then
@@ -90,6 +96,10 @@ module workspace
 				call allocateCompGrid(TMPWS(1)%FLUID(f))
 				call allocateCompGrid(TMPWS(2)%FLUID(f))
 				call allocateCompGrid(TMPWS(3)%FLUID(f))
+				WS%FLUID(f)%field_number = f
+				TMPWS(1)%FLUID(f)%field_number = f
+				TMPWS(2)%FLUID(f)%field_number = f
+				TMPWS(3)%FLUID(f)%field_number = f
 			end do
 			call allocateCompGrid(TMPWS(4)%FLUID(1)) !tmp variable for quasi-periodic calcs - shared over fluids
 
@@ -103,6 +113,10 @@ module workspace
 					call allocateCompGrid(TMPWS(1)%MAGNETIC(m))
 					call allocateCompGrid(TMPWS(2)%MAGNETIC(m))
 					call allocateCompGrid(TMPWS(3)%MAGNETIC(m))
+					WS%MAGNETIC(m)%field_number = FLUIDS + m
+					TMPWS(1)%MAGNETIC(m)%field_number = FLUIDS + m
+					TMPWS(2)%MAGNETIC(m)%field_number = FLUIDS + m
+					TMPWS(3)%MAGNETIC(m)%field_number = FLUIDS + m
 				end do
 			end if
 		end if
@@ -139,7 +153,7 @@ module workspace
 			do f = 1,FLUIDS
 				if(RANK .eq. 0) then
 					write(6, '(a,i3,a,f6.3,a,f6.3,a,f6.3)') "FIELD ",f,&
-						" - NVORTX is: ", NVORTX,", NVORTY is: ", NVORTY,", NVORTZ is: ", NVORTZ
+						" - NVORTX is: ", NVORTALL(1,f),", NVORTY is: ", NVORTALL(2,f),", NVORTZ is: ", NVORTALL(3,f)
 				end if
 				ALLOCATE(WS%FLUID(f)%QP_E(sx:ex,sy:ey,sz:ez,3))
 				call setupEXEYEZ(WS%FLUID(f))
@@ -201,8 +215,8 @@ module workspace
 		do k = sz,ez
 			do j = sy,ey
 				do i = sx,ex
-					field%QP_E(i,j,k,1) = exp(EYE*PI*NVORTY*GX(i)*GZ(k)/((NX-1)*DSPACE*(NZ-1)*DSPACE)&
-								  -EYE*PI*NVORTZ*GX(i)*GY(j)/((NX-1)*DSPACE*(NY-1)*DSPACE))
+					field%QP_E(i,j,k,1) = exp(EYE*PI*NVORTALL(2,field%field_number)*GX(i)*GZ(k)/((NX-1)*DSPACE*(NZ-1)*DSPACE)&
+								  -EYE*PI*NVORTALL(3,field%field_number)*GX(i)*GY(j)/((NX-1)*DSPACE*(NY-1)*DSPACE))
 				end do
 			end do
 		end do
@@ -211,8 +225,8 @@ module workspace
 		do k = sz,ez
 			do j = sy,ey
 				do i = sx,ex
-					field%QP_E(i,j,k,2) = exp(-EYE*PI*NVORTX*GY(j)*GZ(k)/((NY-1)*DSPACE*(NZ-1)*DSPACE)&
-								  +EYE*PI*NVORTZ*GY(j)*GX(i)/((NY-1)*DSPACE*(NX-1)*DSPACE))
+					field%QP_E(i,j,k,2) = exp(-EYE*PI*NVORTALL(1,field%field_number)*GY(j)*GZ(k)/((NY-1)*DSPACE*(NZ-1)*DSPACE)&
+								  +EYE*PI*NVORTALL(3,field%field_number)*GY(j)*GX(i)/((NY-1)*DSPACE*(NX-1)*DSPACE))
 				end do
 			end do
 		end do
@@ -221,8 +235,8 @@ module workspace
 		do k = sz,ez
 			do j = sy,ey
 				do i = sx,ex
-					field%QP_E(i,j,k,3) = exp(EYE*PI*NVORTX*GZ(k)*GY(j)/((NZ-1)*DSPACE*(NY-1)*DSPACE)&
-								  -EYE*PI*NVORTY*GZ(k)*GX(i)/((NZ-1)*DSPACE*(NX-1)*DSPACE))
+					field%QP_E(i,j,k,3) = exp(EYE*PI*NVORTALL(1,field%field_number)*GZ(k)*GY(j)/((NZ-1)*DSPACE*(NY-1)*DSPACE)&
+								  -EYE*PI*NVORTALL(2,field%field_number)*GZ(k)*GX(i)/((NZ-1)*DSPACE*(NX-1)*DSPACE))
 				end do
 			end do
 		end do

@@ -45,9 +45,8 @@ module params
   integer :: BCX = 1
   integer :: BCY = 1
   integer :: BCZ = 1
-  double precision :: NVORTX = 0.0d0
-  double precision :: NVORTY = 0.0d0
-  double precision :: NVORTZ = 0.0d0
+  double precision, dimension(:,:),ALLOCATABLE :: NVORTALL
+  double precision, dimension(3) :: NVORT = (/ 0.0d0, 0.0d0, 0.0d0 /)
 
   !Potentials
   logical :: recalculatePot = .false.
@@ -82,6 +81,7 @@ module params
   !GLOBALS----------------------------------------------------------------------
   double precision,parameter :: PI = 4.0d0*ATAN(1.0d0)
   complex*16 :: DT,EYE = (0.0d0,1.0d0)
+  integer :: da_stat
 
   contains
   subroutine init_params
@@ -89,15 +89,20 @@ module params
     ICRfilename = repeat(" ", 2048) !Clear memory so entire string is blank
     call set_fluid_interactions(1,reshape((/ 1.0d0 /), (/ 1, 1 /)))
     include 'params.in'
+    if (FLUIDS == 1) then
+      ALLOCATE(NVORTALL(3,1))
+      NVORTALL(:,1) = NVORT
+    end if
   END subroutine
 
-  subroutine set_fluid_interactions(N,F)
+  subroutine set_fluid_interactions(N,FG)
     IMPLICIT NONE
     integer :: N,stat
-    double precision :: F(:,:)
+    double precision :: FG(:,:)
     DEALLOCATE(GG,STAT=stat)
     ALLOCATE(GG(N,N))
-    GG = F
+    GG = FG
     FLUIDS = N
   END subroutine
+
 end module

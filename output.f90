@@ -54,7 +54,7 @@ module io
 		r=NF90_create_par(fname, IOR(nf90_netcdf4,nf90_MPIIO), MPI_COMM, info ,ncdf_id)
 		call handle_err(r)
 
-		r=NF90_def_dim(ncdf_id, 'f_dim', NX, f_dim_id)
+		r=NF90_def_dim(ncdf_id, 'f_dim', FLUIDS, f_dim_id)
 		call handle_err(r)
 		r=NF90_def_dim(ncdf_id, 'x_dim', NX, x_dim_id)
 		call handle_err(r)

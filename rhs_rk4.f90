@@ -183,6 +183,7 @@ module rhs_RK4
 			!$OMP end parallel do
 		end if
 		if (RHSType .eq. 3) then
+			TMPWS(4)%FLUID(1)%field_number = f
 			!$OMP parallel do private (i,j,k) collapse(3)
 			do k = sz,ez
 				do j = sy,ey
