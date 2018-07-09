@@ -146,22 +146,31 @@ module rhs_RK4
 				do j = sy+1,ey-1
 					do i = sx+1,ex-1
 						ws_out%FLUID(f)%GRID(i,j,k) = -0.5d0*laplacian(ws_in%FLUID(f),i,j,k)&
-							+ POT(i,j,k)*ws_in%FLUID(f)%GRID(i,j,k) - ws_in%FLUID(f)%GRID(i,j,k)&
-							+ VELX*EYE*ddx(ws_in%FLUID(f),i,j,k)&
-							+ VELY*EYE*ddy(ws_in%FLUID(f),i,j,k)&
-							+ VELZ*EYE*ddz(ws_in%FLUID(f),i,j,k)&
-							+ OMEGA*EYE*(GX(i)*ddy(ws_in%FLUID(f),i,j,k)-GY(j)*ddx(ws_in%FLUID(f),i,j,k))
+							+ POT(i,j,k)*ws_in%FLUID(f)%GRID(i,j,k) - ws_in%FLUID(f)%GRID(i,j,k)
+						if (VELX > 0) then
+							ws_out%FLUID(f)%GRID(i,j,k) = ws_out%FLUID(f)%GRID(i,j,k) + VELX*EYE*ddx(ws_in%FLUID(f),i,j,k)
+						end if
+						if (VELY > 0) then
+							ws_out%FLUID(f)%GRID(i,j,k) = ws_out%FLUID(f)%GRID(i,j,k) + VELY*EYE*ddy(ws_in%FLUID(f),i,j,k)
+						end if
+						if (VELZ > 0) then
+							ws_out%FLUID(f)%GRID(i,j,k) = ws_out%FLUID(f)%GRID(i,j,k) + VELZ*EYE*ddz(ws_in%FLUID(f),i,j,k)
+						end if
+						if (OMEGA > 0) then
+							ws_out%FLUID(f)%GRID(i,j,k) = ws_out%FLUID(f)%GRID(i,j,k) + OMEGA*EYE*(GX(i)&
+								*ddy(ws_in%FLUID(f),i,j,k)-GY(j)*ddx(ws_in%FLUID(f),i,j,k))
+						end if
 					end do
 				end do
 			end do
-			!!$OMP end parallel do
+			!$OMP end parallel do
 			do p = 1,FLUIDS
 				!$OMP parallel do private (i,j,k) collapse(3)
 				do k = sz+1,ez-1
 					do j = sy+1,ey-1
 						do i = sx+1,ex-1
-							ws_out%FLUID(f)%GRID(i,j,k) = ws_out%FLUID(f)%GRID(i,j,k) +&
-								GG(f,p)*ws_in%FLUID(p)%GRID(i,j,k)*CONJG(ws_in%FLUID(p)%GRID(i,j,k))*ws_in%FLUID(f)%GRID(i,j,k)
+							ws_out%FLUID(f)%GRID(i,j,k) = ws_out%FLUID(f)%GRID(i,j,k)&
+								+GG(f,p)*ws_in%FLUID(p)%GRID(i,j,k)*CONJG(ws_in%FLUID(p)%GRID(i,j,k))*ws_in%FLUID(f)%GRID(i,j,k)
 						end do
 					end do
 				end do

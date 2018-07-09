@@ -3,17 +3,12 @@ module init
 	use io
 	contains
 	subroutine initCond
-		implicit none
 		integer :: f
 		if(RANK .eq. 0) then
-			write (6, *) 'Applying initial condition...'
+			write (6, "(a)") 'Applying initial condition...'
 		end if
 		TIME = 0.0d0
-		if(initialCondType .eq. 0) then
-			do f = 1,FLUIDS
-				WS%FLUID(f)%GRID = 1.0d0
-			end do
-		else if (initialCondType .eq. 1) then
+		if (initialCondType .eq. 1) then
 			do f = 1,FLUIDS
 				call makeRandomPhase(WS%FLUID(f))
 			end do
@@ -25,11 +20,30 @@ module init
 			do f = 1,FLUIDS
 				call makeRandomDens(WS%FLUID(f),0.05d0)
 			end do
+		else if (initialCondType .eq. 5) then
+			include 'ic.in'
 		else
 			do f = 1,FLUIDS
-				WS%FLUID(f)%GRID = 1.0d0
+				call makeConst(WS%FLUID(f),(1.0d0,0.0d0))
 			end do
 		end if
+	end subroutine
+
+	subroutine makeConst(field,c)
+		implicit none
+		type(fluid_field) :: field
+		integer :: i, j, k
+		complex*16 :: c
+
+		!$OMP parallel do private (i,j,k) collapse(3)
+		do k = sz,ez
+			do j = sy,ey
+				do i = sx,ex
+					field%GRID(i,j,k) = c
+				end do
+			end do
+		end do
+		!$OMP end parallel do
 	end subroutine
 
 	subroutine makeRandomPhase(field)
@@ -128,5 +142,85 @@ module init
 		call fftw_mpi_execute_dft(fftw_backward_plan, WS%FLUID(1)%GRID, WS%FLUID(1)%GRID)
 		WS%FLUID(1)%GRID=WS%FLUID(1)%GRID/sqrt(dble(NX*NY*NZ))
 
+	end subroutine
+
+	subroutine insert_vortex_ring(field,x0,y0,z0,r0,dir,rot)
+		implicit none
+		integer :: i,j,k,dir,rot
+		type(fluid_field) :: field
+		double precision :: x0,y0,z0,r0
+		double precision, dimension(sx:ex,sy:ey,sz:ez) :: rr1,rr2,d1,d2
+		double precision, dimension(:,:), allocatable :: s
+
+		if (rot .eq. 0) then
+			allocate(s(sx:ex,sy:ey))
+			!$OMP parallel do private (i,j) collapse(2)
+			do j=sy,ey
+				do i=sx,ex
+					s(i,j) = sqrt((GX(i)-x0)**2 + (GY(j)-y0)**2)
+				end do
+			end do
+			!$OMP end parallel do
+		else if (rot .eq. 1) then
+			allocate(s(sx:ex,sz:ez))
+			!$OMP parallel do private (i,k) collapse(2)
+			do k=sz,ez
+				do i=sx,ex
+					s(i,k) = sqrt((GX(i)-x0)**2 + (GZ(k)-z0)**2)
+				end do
+			end do
+			!$OMP end parallel do
+		else if (rot .eq. 2) then
+			allocate(s(sy:ey,sz:ez))
+			!$OMP parallel do private (k,j) collapse(2)
+			do k=sz,ez
+				do j=sy,ey
+					s(j,k) = sqrt((GY(j)-y0)**2 + (GZ(k)-z0)**2)
+				end do
+			end do
+			!$OMP end parallel do
+		end if
+
+		!$OMP parallel do private (i,j,k) collapse(3)
+		do k=sz,ez
+			do j=sy,ey
+				do i=sx,ex
+				if (rot .eq. 0) then
+					d1(i,j,k) = sqrt((GZ(k) - z0)**2 + (s(i,j)+r0)**2)
+					d2(i,j,k) = sqrt((GZ(k) - z0)**2 + (s(i,j)-r0)**2)
+				else if (rot .eq. 1) then
+					d1(i,j,k) = sqrt((GY(j) - y0)**2 + (s(i,k)+r0)**2)
+					d2(i,j,k) = sqrt((GY(j) - y0)**2 + (s(i,k)-r0)**2)
+				else if (rot .eq. 2) then
+					d1(i,j,k) = sqrt((GX(i) - x0)**2 + (s(j,k)+r0)**2 )
+					d2(i,j,k) = sqrt((GX(i) - x0)**2 + (s(j,k)-r0)**2 )
+				end if
+				end do
+			end do
+		end do
+		!$OMP end parallel do
+
+		rr1 = sqrt(((0.3437d0+0.0572d0*d1**2))/(1.0d0+(0.6666d0*d1**2)+(0.0572d0*d1**4)))
+		rr2 = sqrt(((0.3437d0+0.0572d0*d2**2))/(1.0d0+(0.6666d0*d2**2)+(0.0572d0*d2**4)))
+
+		!$OMP parallel do private (i,j,k) collapse(3)
+		do k=sz,ez
+			do j=sy,ey
+				do i=sx,ex
+					if (rot .eq. 0) then
+					field%GRID(i,j,k) = field%GRID(i,j,k)*rr1(i,j,k)*(GZ(k)-z0+dir*EYE*(s(i,j)+r0))* &
+														  rr2(i,j,k)*(GZ(k)-z0-dir*EYE*(s(i,j)-r0))
+					else if (rot .eq. 1) then
+					field%GRID(i,j,k) = field%GRID(i,j,k)*rr1(i,j,k)*(GY(j)-y0+dir*EYE*(s(i,k)+r0))* &
+														  rr2(i,j,k)*(GY(j)-y0-dir*EYE*(s(i,k)-r0))
+					else if (rot .eq. 2) then
+					field%GRID(i,j,k) = field%GRID(i,j,k)*rr1(i,j,k)*(GX(i)-x0+dir*EYE*(s(j,k)+r0))* &
+														  rr2(i,j,k)*(GX(i)-x0-dir*EYE*(s(j,k)-r0))
+					end if
+				end do
+			end do
+		end do
+		!$OMP end parallel do
+		deallocate(s)
 	end subroutine
 end module

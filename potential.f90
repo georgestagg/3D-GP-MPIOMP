@@ -8,9 +8,9 @@ subroutine calc_POT
         if(potType .eq. 0) then
             call calc_OBJPOT_obj
         end if
-        !if(potType .eq. 4) then
-        !    call calc_OBJPOT_surf
-        !end if
+        if(potType .eq. 1) then
+            call calc_OBJPOT_surf
+        end if
     end if
     if (enableTrap) then
         if (trapType .eq. 0) then
@@ -29,6 +29,12 @@ subroutine calc_POT
     
 end subroutine
 
+subroutine calc_OBJPOT_surf
+    use workspace
+    use io
+    implicit none
+    call read_surf_file_RK4(SURFfilename)
+end subroutine
 
 subroutine calc_OBJPOT_obj
     use workspace

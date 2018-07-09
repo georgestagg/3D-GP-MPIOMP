@@ -104,11 +104,11 @@ module io
 	subroutine write_wf_file_RK4(rt)
 		implicit none
 		integer :: rt,f
+		r = nf90_inq_varid(ncdf_id, "gx", x_id)
+		call handle_err(r)
 		!Dont forget to ignore ghost points!
 		istarting(1) = sx+1
 		icount(1) = ex-sx-1
-		!write(6,'(a,i4,a,i3,a,i3,a,i3,a,i3)') "Rank: ", rank, " is writing GX(", sx+1,":",ex-1, &
-		!    ") starting from",istarting(1),"with length",icount(1)
 		r=NF90_put_var(ncdf_id, x_id, GX(sx+1:ex-1),istarting,icount)
 		call handle_err(r)
 		istarting(1) = sy+1
@@ -141,6 +141,8 @@ module io
 		icount(2) = ey-sy-1
 		istarting(3) = sz+1
 		icount(3) = ez-sz-1
+		istarting(4) = 0
+		icount(4) = 0
 		r=NF90_put_var(ncdf_id,pot_id,POT(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1),istarting,icount)
 		call handle_err(r)
 		if(rt == 1) then
@@ -278,7 +280,62 @@ module io
 			write(6,*) "Reload complete!"
 		end if
 	end subroutine
-	
+
+
+	subroutine read_surf_file_RK4(fname)
+		implicit none
+		integer :: rsurf_ncid,rsurf_surf_id,i,j,k
+		double precision, dimension(sx:ex,sy:ey) :: h
+		double precision :: localhmin, globalhmin
+		character(len=2048) fname
+		if(RANK .eq. 0) then
+			write(6,"(a)") "Building surface potential..."
+			write(6,*) "Opening surface file: ", TRIM(fname)
+		end if
+
+		r = NF90_open_par(fname,IOR(nf90_netcdf4,IOR(NF90_NOWRITE,nf90_MPIIO)),MPI_COMM,MPI_INFO_NULL,rsurf_ncid)
+		call handle_err(r)
+		r = NF90_inq_varid(rsurf_ncid,  "surf", rsurf_surf_id)
+		call handle_err(r)
+
+		istarting(1) = sx+1
+		icount(1) = ex-sx-1
+		istarting(2) = sy+1
+		icount(2) = ey-sy-1
+
+		r = NF90_get_var(rsurf_ncid, rsurf_surf_id, h(sx+1:ex-1,sy+1:ey-1),start=istarting,count=icount)
+		call handle_err(r)
+
+		r = NF90_close(rsurf_ncid)
+		call handle_err(r)
+
+		if(RANK .eq. 0) then
+			write(6,*) "Surface file read complete! Building potential..."
+		end if 
+
+		localhmin = minval(h)
+		call MPI_Allreduce(localhmin, globalhmin, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_GRID,IERR_3DWG)
+
+		!$OMP parallel do private (i,j,k) collapse(3)
+	    do k = sz+1,ez-1
+	        do j = sy+1,ey-1
+	            do i = sx+1,ex-1
+	            	if (GZ(k) < h(i,j) - globalhmin) then
+	                	POT(i,j,k) = OBJHEIGHT
+	                else
+	                	POT(i,j,k) = 0.0d0
+	                end if
+	            end do
+	        end do
+	    end do
+    	!$OMP end parallel do
+
+		if(RANK .eq. 0) then
+			write(6,"(a)") "Potential successfully built from surface."
+		end if
+	end subroutine
+
+
 	subroutine read_wf_file_FFTW(fname)
 		implicit none
 		integer :: rwf_ncid,rwf_re_id,rwf_im_id,rwf_pot_id,rwf_step_id,rwf_time_id

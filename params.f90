@@ -75,7 +75,10 @@ module params
   double precision :: TZSCALE = 1.0d0
 
   integer :: initialCondType = 0
+
+
   character(2048) :: ICRfilename
+  character(2048) :: SURFfilename
   integer :: INITSSTEP = 0
 
   !GLOBALS----------------------------------------------------------------------
@@ -87,6 +90,7 @@ module params
   subroutine init_params
     IMPLICIT NONE
     ICRfilename = repeat(" ", 2048) !Clear memory so entire string is blank
+    SURFfilename = repeat(" ", 2048)
     call set_fluid_interactions(1,reshape((/ 1.0d0 /), (/ 1, 1 /)))
     include 'params.in'
     if (FLUIDS == 1) then

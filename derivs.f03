@@ -4,7 +4,7 @@ interface laplacian
 	procedure laplacian_fluid, laplacian_magnetic
 end interface
 contains
-	double precision function laplacian_fluid(field_in,i,j,k)
+	complex*16 function laplacian_fluid(field_in,i,j,k)
 		use params
 		implicit none
 		class(fluid_field) :: field_in
@@ -13,7 +13,7 @@ contains
 								  + BC(field_in,i,j+1,k)+BC(field_in,i,j-1,k)&
 								  + BC(field_in,i,j,k+1)+BC(field_in,i,j,k-1))/(DSPACE**2.0d0)
 	end function
-	complex*16 function laplacian_magnetic(field_in,i,j,k)
+	double precision function laplacian_magnetic(field_in,i,j,k)
 		use params
 		implicit none
 		class(magnetic_field) :: field_in

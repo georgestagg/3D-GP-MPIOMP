@@ -18,6 +18,11 @@ if [ -a params.in ]; then
 else
 	cp $GP3DSOURCELOC/params.in.dist $GP3DSOURCELOC/params.in
 fi
+#Take care of any ic.in changes
+if [ -a ic.in ]; then
+	cp ic.in $GP3DSOURCELOC
+fi
+
 #Change to code dir
 origdir=${PWD}
 pushd $GP3DSOURCELOC
@@ -27,7 +32,7 @@ make
 #if [ $? == 0 ]; then
 mv gp $origdir
 cp params.in "run.$TYPE" $origdir
-rm *.mod params.in
+rm *.mod params.in ic.in
 #fi
 make clean
 #go back
