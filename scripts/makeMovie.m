@@ -14,10 +14,6 @@ function makeMovie(dirarg,startno,stride,endno,varargin)
         h=figure('visible','off');
         plot3d(gridx,gridy,gridz,psi,varargin{:});
         
-        %imagesc(gridx,gridy,squeeze(abs(psi(:,:,4)).^2))
-        %axis xy
-        %axis image
-        
         filename = strcat(pngfolder, '/d%04d.png');
         finalfname = sprintf(filename,j);
         print (h,'-dpng','-r300',finalfname);

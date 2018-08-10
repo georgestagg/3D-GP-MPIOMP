@@ -289,10 +289,11 @@ module io
 		double precision :: localhmin, globalhmin
 		character(len=2048) fname
 		if(RANK .eq. 0) then
-			write(6,"(a)") "Building surface potential..."
 			write(6,*) "Opening surface file: ", TRIM(fname)
 		end if
 
+		h = 0.0d0
+		
 		r = NF90_open_par(fname,IOR(nf90_netcdf4,IOR(NF90_NOWRITE,nf90_MPIIO)),MPI_COMM,MPI_INFO_NULL,rsurf_ncid)
 		call handle_err(r)
 		r = NF90_inq_varid(rsurf_ncid,  "surf", rsurf_surf_id)
@@ -310,7 +311,7 @@ module io
 		call handle_err(r)
 
 		if(RANK .eq. 0) then
-			write(6,*) "Surface file read complete! Building potential..."
+			write(6,*) "Surface file read complete!"
 		end if 
 
 		localhmin = minval(h)

@@ -33,6 +33,9 @@ subroutine calc_OBJPOT_surf
     use workspace
     use io
     implicit none
+    if(RANK .eq. 0) then
+        write(6,"(a)") "Building surface potential..."
+    end if
     call read_surf_file_RK4(SURFfilename)
 end subroutine
 

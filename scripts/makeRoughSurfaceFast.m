@@ -16,7 +16,7 @@ function [K1,K2] = makeRoughSurfaceFast(gridx,gridy,l,sigma)
     BlkCirc_row=[Rows, Cols(:,end:-1:2);Cols(end:-1:2,:), Rows(end:-1:2,end:-1:2)];
 
     lam=real(fft2(BlkCirc_row))/(2*m-1)/(2*n-1);
-    if abs(min(lam(lam(:)<0)))>10^-10
+    if abs(min(lam(lam(:)<0)))>10^-6
         error('Could not find positive definite embedding!')
     else
         lam(lam(:)<0)=0; lam=sqrt(lam);
