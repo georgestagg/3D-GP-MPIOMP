@@ -3,7 +3,7 @@ module io
 	use netcdf
 	implicit none
 	include 'mpif.h'
-	integer :: ncdf_id,x_id,y_id,z_id,f_re_id,f_im_id,pot_id,time_id,step_id,info,r
+	integer :: ncdf_id,x_id,y_id,z_id,f_re_id,f_im_id,pot_id,time_id,step_id,r,mpi_info
 	integer       :: icount(4)
 	integer       :: istarting(4)
 	Contains
@@ -11,7 +11,7 @@ module io
 	subroutine dump_wavefunction (II)
 		implicit none
 		integer :: II
-		character(len=80) fname
+		character(len=30) :: fname
 		if(RT == 1) then
 			write(fname, '(a,i0.6,a)') 'psi.', II/DUMPWF,".nc"
 		else
@@ -21,7 +21,7 @@ module io
 			write(6,'(a,a)',advance="no") "Writing: ", TRIM(fname)
 		end if
 
-		call make_file(fname)
+		call make_file(TRIM(fname))
 
 		if(RANK .eq. 0) then
 			write(6,'(a)',advance="no") "."
@@ -47,11 +47,8 @@ module io
 		integer :: f_dim_id,x_dim_id,y_dim_id,z_dim_id
 		character(len=*) :: fname
 
-		call MPI_Info_create(info, IERR)
-		call mpi_info_set(info, "romio_ds_write", "disable", ierr)
-		call mpi_info_set(info, "romio_ds_read", "disable", ierr)
-
-		r=NF90_create_par(fname, IOR(nf90_netcdf4,nf90_MPIIO), MPI_COMM, info ,ncdf_id)
+		call MPI_Info_create(mpi_info, IERR)
+		r=NF90_create(fname, IOR(NF90_NETCDF4, NF90_MPIIO), ncdf_id)
 		call handle_err(r)
 
 		r=NF90_def_dim(ncdf_id, 'f_dim', FLUIDS, f_dim_id)
@@ -88,6 +85,9 @@ module io
 		r=NF90_def_var(ncdf_id, 'step' , NF90_INT, step_id)
 		call handle_err(r)
 		r=NF90_def_var(ncdf_id, 'time' , NF90_DOUBLE, time_id)
+		call handle_err(r)
+
+		r = NF90_enddef(ncdf_id)
 		call handle_err(r)
 	end subroutine
 
@@ -402,8 +402,8 @@ module io
 	subroutine handle_err(status)
 		integer, intent ( in) :: status
 		if(status /= nf90_noerr) then
-		  print *, trim(nf90_strerror(status))
-		  stop "Stopped"
+			print *, r, trim(nf90_strerror(status))
+			call abort()
 		end if
 	end subroutine handle_err
 

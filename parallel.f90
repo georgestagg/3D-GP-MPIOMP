@@ -24,10 +24,8 @@ module parallel
 
         if(METHOD==0) then
             call init_parallel_3DWithGhost
-            MPI_COMM = MPI_COMM_GRID
         else if(METHOD==1) then
             call init_parallel_FFTW
-            MPI_COMM = MPI_COMM_FFTW
         end if
 
         call MPI_COMM_RANK(MPI_COMM_WORLD, RANK, IERR)
@@ -42,6 +40,12 @@ module parallel
         call parallel_barrier
         call run_omp_checks
         call setup_parallel_topology
+
+        if(METHOD==0) then
+            MPI_COMM = MPI_COMM_GRID
+        else if(METHOD==1) then
+            MPI_COMM = MPI_COMM_FFTW
+        end if
         
     end subroutine
 

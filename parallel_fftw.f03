@@ -12,7 +12,6 @@ module parallel_FFTW
         implicit none
         integer :: provided
         include 'mpif.h'
-        MPI_COMM_FFTW = MPI_COMM_WORLD
         call MPI_Init_thread(MPI_THREAD_FUNNELED,provided,IERR_MPI)
         if(provided < MPI_THREAD_FUNNELED) then
             write(6,'(a)') "ERROR: Provided MPI threading less than required!"
@@ -22,7 +21,8 @@ module parallel_FFTW
 
     subroutine setup_parallel_topology_FFTW
         implicit none
-
+        include 'mpif.h'
+        MPI_COMM_FFTW = MPI_COMM_WORLD
         IERR_FFTW = fftw_init_threads()
         call fftw_mpi_init
         call fftw_plan_with_nthreads(omp_get_num_threads())
