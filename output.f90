@@ -173,12 +173,12 @@ module io
 
 		istarting(1) = 1
 		icount(1) = 1
-		istarting(2) = sx+1
-		icount(2) = ex-sx-1
-		istarting(3) = sy+1
-		icount(3) = ey-sy-1
-		istarting(4) = sz+1
-		icount(4) = ez-sz-1
+		istarting(2) = 1
+		icount(2) = NX
+		istarting(3) = 1
+		icount(3) = NY
+		istarting(4) = 1+local_k_offset
+		icount(4) = ez
 		r=NF90_put_var(ncdf_id,f_re_id,DBLE(WS%FLUID(1)%GRID),istarting,icount)
 		call handle_err(r)
 		r=NF90_put_var(ncdf_id,f_im_id,DIMAG(WS%FLUID(1)%GRID),istarting,icount)
@@ -230,7 +230,7 @@ module io
 			write(6,*) "Opening file: ", TRIM(fname)
 		end if
 
-		r = NF90_open_par(fname,IOR(nf90_netcdf4,IOR(NF90_NOWRITE,nf90_MPIIO)),MPI_COMM,MPI_INFO_NULL,rwf_ncid)
+		r = NF90_open(fname,NF90_NOWRITE,rwf_ncid)
 		call handle_err(r)
 
 		r = NF90_inq_varid(rwf_ncid, "fluid_real",  rwf_re_id)
@@ -266,6 +266,8 @@ module io
 		icount(2) = ey-sy-1
 		istarting(3) = sz+1
 		icount(3) = ez-sz-1
+		istarting(4) = 0
+		icount(4) = 0
 		r = NF90_get_var(rwf_ncid, rwf_pot_id, POT(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1),start=istarting,count=icount)
 		call handle_err(r)
 		r=NF90_get_var(rwf_ncid,rwf_step_id,INITSSTEP)
@@ -294,7 +296,7 @@ module io
 
 		h = 0.0d0
 		
-		r = NF90_open_par(fname,IOR(nf90_netcdf4,IOR(NF90_NOWRITE,nf90_MPIIO)),MPI_COMM,MPI_INFO_NULL,rsurf_ncid)
+		r = NF90_open(fname,IOR(nf90_netcdf4,nf90_MPIIO),rsurf_ncid)
 		call handle_err(r)
 		r = NF90_inq_varid(rsurf_ncid,  "surf", rsurf_surf_id)
 		call handle_err(r)
@@ -347,7 +349,7 @@ module io
 			write(6,*) "Opening file: ", TRIM(fname)
 		end if
 
-		r = NF90_open_par(fname,IOR(nf90_netcdf4,IOR(NF90_NOWRITE,nf90_MPIIO)),MPI_COMM,MPI_INFO_NULL,rwf_ncid)
+		r = NF90_open(fname,IOR(nf90_netcdf4,nf90_MPIIO),rwf_ncid)
 		call handle_err(r)
 
 		r = NF90_inq_varid(rwf_ncid, "fluid_real",  rwf_re_id)
