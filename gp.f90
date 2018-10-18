@@ -72,7 +72,7 @@ subroutine simulate(steps,set_rt)
 
     RT = set_rt
 
-    do cur_step = INITSSTEP, steps-1
+    do cur_step = INITSTEP, steps-1
         !Housekeeping
         if (modulo(cur_step,DUMPUTIL) == 0) then
             if(RANK == 0) then

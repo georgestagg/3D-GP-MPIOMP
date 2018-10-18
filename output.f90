@@ -3,9 +3,10 @@ module io
 	use netcdf
 	implicit none
 	include 'mpif.h'
-	integer :: ncdf_id,x_id,y_id,z_id,f_re_id,f_im_id,pot_id,time_id,step_id,r,mpi_info
-	integer       :: icount(4)
-	integer       :: istarting(4)
+	integer, allocatable :: f_re_id(:), f_im_id(:)
+	integer :: ncdf_id,x_id,y_id,z_id,pot_id,time_id,step_id,r,mpi_info, stat
+	integer       :: icount(3)
+	integer       :: istarting(3)
 	Contains
 
 	subroutine dump_wavefunction (II)
@@ -43,16 +44,15 @@ module io
 
 	subroutine make_file(fname)
 		implicit none
-		integer :: dims(3),f_dims(4)
-		integer :: f_dim_id,x_dim_id,y_dim_id,z_dim_id
+		integer :: dims(3), f
+		integer :: x_dim_id,y_dim_id,z_dim_id
 		character(len=*) :: fname
+		character(len=1024) :: vname
 
 		call MPI_Info_create(mpi_info, IERR)
 		r=NF90_create(fname, IOR(NF90_NETCDF4, NF90_MPIIO), ncdf_id)
 		call handle_err(r)
 
-		r=NF90_def_dim(ncdf_id, 'f_dim', FLUIDS, f_dim_id)
-		call handle_err(r)
 		r=NF90_def_dim(ncdf_id, 'x_dim', NX, x_dim_id)
 		call handle_err(r)
 		r=NF90_def_dim(ncdf_id, 'y_dim', NY, y_dim_id)
@@ -67,18 +67,24 @@ module io
 		r=NF90_def_var(ncdf_id, 'gz', NF90_DOUBLE,z_dim_id, z_id)
 		call handle_err(r)
 
-		f_dims(1) = f_dim_id
-		f_dims(2) = x_dim_id
-		f_dims(3) = y_dim_id
-		f_dims(4) = z_dim_id
 		dims(1) = x_dim_id
 		dims(2) = y_dim_id
 		dims(3) = z_dim_id
 
-		r=NF90_def_var(ncdf_id, 'fluid_real', NF90_DOUBLE, f_dims, f_re_id)
-		call handle_err(r)
-		r=NF90_def_var(ncdf_id, 'fluid_imag', NF90_DOUBLE, f_dims, f_im_id)
-		call handle_err(r)
+		deallocate(f_re_id,STAT=stat)
+		allocate(f_re_id(FLUIDS))
+		deallocate(f_im_id,STAT=stat)
+		allocate(f_im_id(FLUIDS))
+
+		do f = 1,FLUIDS
+			write(vname,'(a,i0.3,a)') 'fluid_',f,'_real'
+			r=NF90_def_var(ncdf_id, vname, NF90_DOUBLE, dims, f_re_id(f))
+			call handle_err(r)
+			write(vname,'(a,i0.3,a)') 'fluid_',f,'_imag'
+			r=NF90_def_var(ncdf_id, vname, NF90_DOUBLE, dims, f_im_id(f))
+			call handle_err(r)
+		end do
+
 		r=NF90_def_var(ncdf_id, 'pot' , NF90_DOUBLE, dims, pot_id)
 		call handle_err(r)
 
@@ -104,6 +110,7 @@ module io
 	subroutine write_wf_file_RK4(rt)
 		implicit none
 		integer :: rt,f
+
 		r = nf90_inq_varid(ncdf_id, "gx", x_id)
 		call handle_err(r)
 		!Dont forget to ignore ghost points!
@@ -120,37 +127,29 @@ module io
 		r=NF90_put_var(ncdf_id, z_id, GZ(sz+1:ez-1),istarting,icount)
 		call handle_err(r)
 
-		istarting(2) = sx+1
-		icount(2) = ex-sx-1
-		istarting(3) = sy+1
-		icount(3) = ey-sy-1
-		istarting(4) = sz+1
-		icount(4) = ez-sz-1
-		do f = 1,FLUIDS
-			istarting(1) = f
-			icount(1) = 1
-			r=NF90_put_var(ncdf_id,f_re_id,DBLE(WS%FLUID(f)%GRID(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1)),istarting,icount)
-			call handle_err(r)
-			r=NF90_put_var(ncdf_id,f_im_id,DIMAG(WS%FLUID(f)%GRID(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1)),istarting,icount)
-			call handle_err(r)
-		end do
-
 		istarting(1) = sx+1
 		icount(1) = ex-sx-1
 		istarting(2) = sy+1
 		icount(2) = ey-sy-1
 		istarting(3) = sz+1
 		icount(3) = ez-sz-1
-		istarting(4) = 0
-		icount(4) = 0
+		do f = 1,FLUIDS
+			r=NF90_put_var(ncdf_id,f_re_id(f),DBLE(WS%FLUID(f)%GRID(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1)),istarting,icount)
+			call handle_err(r)
+			r=NF90_put_var(ncdf_id,f_im_id(f),DIMAG(WS%FLUID(f)%GRID(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1)),istarting,icount)
+			call handle_err(r)
+		end do
+
 		r=NF90_put_var(ncdf_id,pot_id,POT(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1),istarting,icount)
 		call handle_err(r)
+
 		if(rt == 1) then
 			r=NF90_put_var(ncdf_id,step_id,cur_step)
 		else
 			r=NF90_put_var(ncdf_id,step_id,0)
 		end if
 		call handle_err(r)
+
 		r=NF90_put_var(ncdf_id,time_id,TIME)
 		call handle_err(r)
 	end subroutine
@@ -172,26 +171,19 @@ module io
 		call handle_err(r)
 
 		istarting(1) = 1
-		icount(1) = 1
-		istarting(2) = 1
-		icount(2) = NX
-		istarting(3) = 1
-		icount(3) = NY
-		istarting(4) = 1+local_k_offset
-		icount(4) = ez
-		r=NF90_put_var(ncdf_id,f_re_id,DBLE(WS%FLUID(1)%GRID),istarting,icount)
-		call handle_err(r)
-		r=NF90_put_var(ncdf_id,f_im_id,DIMAG(WS%FLUID(1)%GRID),istarting,icount)
-		call handle_err(r)
-
-		istarting(1) = 1
 		icount(1) = NX
 		istarting(2) = 1
 		icount(2) = NY
 		istarting(3) = 1+local_k_offset
 		icount(3) = ez
+		r=NF90_put_var(ncdf_id,f_re_id(1),DBLE(WS%FLUID(1)%GRID),istarting,icount)
+		call handle_err(r)
+		r=NF90_put_var(ncdf_id,f_im_id(1),DIMAG(WS%FLUID(1)%GRID),istarting,icount)
+		call handle_err(r)
+
 		r=NF90_put_var(ncdf_id,pot_id,POT,istarting,icount)
 		call handle_err(r)
+
 		if(rt == 1) then
 			r=NF90_put_var(ncdf_id,step_id,cur_step)
 		else
@@ -222,9 +214,11 @@ module io
 
 	subroutine read_wf_file_RK4(fname)
 		implicit none
-		integer :: rwf_ncid,rwf_re_id,rwf_im_id,rwf_pot_id,rwf_step_id,rwf_time_id,f
+		integer :: rwf_ncid,rwf_pot_id,rwf_step_id,rwf_time_id,f
+		integer, allocatable :: rwf_re_id(:),rwf_im_id(:)
 		double precision, dimension(sx:ex,sy:ey,sz:ez) :: realgrid,imaggrid
-		character(len=2048) fname
+		character(len=*) fname
+		character(len=1024) vname
 		if(RANK .eq. 0) then
 			write(6,*) "Reading saved state..."
 			write(6,*) "Opening file: ", TRIM(fname)
@@ -233,10 +227,20 @@ module io
 		r = NF90_open(fname,NF90_NOWRITE,rwf_ncid)
 		call handle_err(r)
 
-		r = NF90_inq_varid(rwf_ncid, "fluid_real",  rwf_re_id)
-		call handle_err(r)
-		r = NF90_inq_varid(rwf_ncid, "fluid_imag",  rwf_im_id)
-		call handle_err(r)
+		deallocate(f_re_id,STAT=stat)
+		allocate(rwf_re_id(FLUIDS))
+		deallocate(f_im_id,STAT=stat)
+		allocate(rwf_re_id(FLUIDS))
+
+		do f = 1,FLUIDS
+			write(vname,'(a,i0.3,a)') 'fluid_',f,'_real'
+			r = NF90_inq_varid(rwf_ncid, vname,  rwf_re_id(f))
+			call handle_err(r)
+			write(vname,'(a,i0.3,a)') 'fluid_',f,'_imag'
+			r = NF90_inq_varid(rwf_ncid, vname,  rwf_im_id(f))
+			call handle_err(r)
+		end do
+
 		r = NF90_inq_varid(rwf_ncid,  "pot", rwf_pot_id)
 		call handle_err(r)
 		r = NF90_inq_varid(rwf_ncid, "step",  rwf_step_id)
@@ -244,34 +248,25 @@ module io
 		r = NF90_inq_varid(rwf_ncid,  "time", rwf_time_id)
 		call handle_err(r)
 
-		istarting(2) = sx+1
-		icount(2) = ex-sx-1
-		istarting(3) = sy+1
-		icount(3) = ey-sy-1
-		istarting(4) = sz+1
-		icount(4) = ez-sz-1
-		do f = 1,FLUIDS
-			istarting(1) = f
-			icount(1) = 1
-			r = NF90_get_var(rwf_ncid, rwf_re_id, realgrid(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1),start=istarting,count=icount)
-			call handle_err(r)
-			r = NF90_get_var(rwf_ncid, rwf_im_id, imaggrid(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1),start=istarting,count=icount)
-			call handle_err(r)
-			WS%FLUID(f)%GRID = realgrid + EYE*imaggrid
-		end do
-
 		istarting(1) = sx+1
 		icount(1) = ex-sx-1
 		istarting(2) = sy+1
 		icount(2) = ey-sy-1
 		istarting(3) = sz+1
 		icount(3) = ez-sz-1
-		istarting(4) = 0
-		icount(4) = 0
+		do f = 1,FLUIDS
+			r = NF90_get_var(rwf_ncid, rwf_re_id(f), realgrid(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1),start=istarting,count=icount)
+			call handle_err(r)
+			r = NF90_get_var(rwf_ncid, rwf_im_id(f), imaggrid(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1),start=istarting,count=icount)
+			call handle_err(r)
+			WS%FLUID(f)%GRID = realgrid + EYE*imaggrid
+		end do
+
 		r = NF90_get_var(rwf_ncid, rwf_pot_id, POT(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1),start=istarting,count=icount)
 		call handle_err(r)
-		r=NF90_get_var(rwf_ncid,rwf_step_id,INITSSTEP)
-		call handle_err(r)
+
+		!r=NF90_get_var(rwf_ncid,rwf_step_id,INITSSTEP)
+		!call handle_err(r)
 		r=NF90_get_var(rwf_ncid,rwf_time_id,TIME)
 		call handle_err(r)
 
@@ -280,6 +275,7 @@ module io
 
 		if(RANK .eq. 0) then
 			write(6,*) "Reload complete!"
+			write(6,fmt="(a,i8,a,f10.3)") "Resuming simulation from step number: ",INITSTEP, ", at time: ", TIME
 		end if
 	end subroutine
 
@@ -341,9 +337,10 @@ module io
 
 	subroutine read_wf_file_FFTW(fname)
 		implicit none
-		integer :: rwf_ncid,rwf_re_id,rwf_im_id,rwf_pot_id,rwf_step_id,rwf_time_id
+		integer :: rwf_ncid,rwf_pot_id,rwf_step_id,rwf_time_id
 		double precision, dimension(sx:ex,sy:ey,sz:ez) :: realgrid,imaggrid
-		character(len=2048) fname
+		integer, allocatable :: rwf_re_id(:),rwf_im_id(:)
+		character(len=*) fname
 		if(RANK .eq. 0) then
 			write(6,*) "Reading saved state..."
 			write(6,*) "Opening file: ", TRIM(fname)
@@ -352,10 +349,16 @@ module io
 		r = NF90_open(fname,IOR(nf90_netcdf4,nf90_MPIIO),rwf_ncid)
 		call handle_err(r)
 
-		r = NF90_inq_varid(rwf_ncid, "fluid_real",  rwf_re_id)
+		deallocate(f_re_id,STAT=stat)
+		allocate(rwf_re_id(1))
+		deallocate(f_im_id,STAT=stat)
+		allocate(rwf_re_id(1))
+
+		r = NF90_inq_varid(rwf_ncid, 'fluid_001_real',  rwf_re_id(1))
 		call handle_err(r)
-		r = NF90_inq_varid(rwf_ncid, "fluid_imag",  rwf_im_id)
+		r = NF90_inq_varid(rwf_ncid, 'fluid_001_imag',  rwf_im_id(1))
 		call handle_err(r)
+
 		r = NF90_inq_varid(rwf_ncid,  "pot", rwf_pot_id)
 		call handle_err(r)
 		r = NF90_inq_varid(rwf_ncid, "step",  rwf_step_id)
@@ -363,32 +366,24 @@ module io
 		r = NF90_inq_varid(rwf_ncid, "time", rwf_time_id)
 		call handle_err(r)
 
-
-		istarting(1) = 1
-		icount(1) = 1
-		istarting(2) = 1
-		icount(2) = NX
-		istarting(3) = 1
-		icount(3) = NY
-		istarting(4) = 1+local_k_offset
-		icount(4) = ez
-		r = NF90_get_var(rwf_ncid, rwf_re_id, realgrid,start=istarting,count=icount)
-		call handle_err(r)
-		r = NF90_get_var(rwf_ncid, rwf_im_id, imaggrid,start=istarting,count=icount)
-		call handle_err(r)
-		WS%FLUID(1)%GRID = realgrid + EYE*imaggrid
-
 		istarting(1) = 1
 		icount(1) = NX
 		istarting(2) = 1
 		icount(2) = NY
 		istarting(3) = 1+local_k_offset
 		icount(3) = ez
+
+		r = NF90_get_var(rwf_ncid, rwf_re_id(1), realgrid,start=istarting,count=icount)
+		call handle_err(r)
+		r = NF90_get_var(rwf_ncid, rwf_im_id(1), imaggrid,start=istarting,count=icount)
+		call handle_err(r)
+		WS%FLUID(1)%GRID = realgrid + EYE*imaggrid
+
 		r = NF90_get_var(rwf_ncid, rwf_pot_id, POT,start=istarting,count=icount)
 		call handle_err(r)
 
-		r=NF90_get_var(rwf_ncid,rwf_step_id,INITSSTEP)
-		call handle_err(r)
+		!r=NF90_get_var(rwf_ncid,rwf_step_id,INITSSTEP)
+		!call handle_err(r)
 		r=NF90_get_var(rwf_ncid,rwf_time_id,TIME)
 		call handle_err(r)
 
@@ -397,7 +392,7 @@ module io
 
 		if(RANK .eq. 0) then
 			write(6,*) "Reload complete!"
-			write(6,fmt="(a,i8,a,f10.3)") "Resuming simulation from step number: ",INITSSTEP, ", at time: ", TIME
+			write(6,fmt="(a,i8,a,f10.3)") "Resuming simulation from step number: ",INITSTEP, ", at time: ", TIME
 		end if
 	end subroutine
 

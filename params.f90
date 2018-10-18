@@ -79,7 +79,7 @@ module params
 
   character(2048) :: ICRfilename
   character(2048) :: SURFfilename
-  integer :: INITSSTEP = 0
+  integer :: INITSTEP = 0
 
   !GLOBALS----------------------------------------------------------------------
   double precision,parameter :: PI = 4.0d0*ATAN(1.0d0)
