@@ -11,8 +11,8 @@ fname = sprintf(datalocation,frame);
 gridx = ncread(fname,'gx');
 gridy = ncread(fname,'gy');
 gridz = ncread(fname,'gz');
-real = ncread(fname,'fluid_real');
-imag = ncread(fname,'fluid_imag');
+real = ncread(fname,'fluid_001_real');
+imag = ncread(fname,'fluid_001_imag');
 potential = ncread(fname,'pot');
 psi = real + 1i.*imag;
 %permute data to matlab's expected (y,x,z)

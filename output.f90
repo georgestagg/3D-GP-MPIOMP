@@ -227,10 +227,10 @@ module io
 		r = NF90_open(fname,NF90_NOWRITE,rwf_ncid)
 		call handle_err(r)
 
-		deallocate(f_re_id,STAT=stat)
+		deallocate(rwf_re_id,STAT=stat)
 		allocate(rwf_re_id(FLUIDS))
-		deallocate(f_im_id,STAT=stat)
-		allocate(rwf_re_id(FLUIDS))
+		deallocate(rwf_im_id,STAT=stat)
+		allocate(rwf_im_id(FLUIDS))
 
 		do f = 1,FLUIDS
 			write(vname,'(a,i0.3,a)') 'fluid_',f,'_real'
@@ -349,10 +349,10 @@ module io
 		r = NF90_open(fname,IOR(nf90_netcdf4,nf90_MPIIO),rwf_ncid)
 		call handle_err(r)
 
-		deallocate(f_re_id,STAT=stat)
+		deallocate(rwf_re_id,STAT=stat)
 		allocate(rwf_re_id(1))
-		deallocate(f_im_id,STAT=stat)
-		allocate(rwf_re_id(1))
+		deallocate(rwf_im_id,STAT=stat)
+		allocate(rwf_im_id(1))
 
 		r = NF90_inq_varid(rwf_ncid, 'fluid_001_real',  rwf_re_id(1))
 		call handle_err(r)
