@@ -16,7 +16,7 @@ imag = ncread(fname,'fluid_001_imag');
 potential = ncread(fname,'pot');
 psi = real + 1i.*imag;
 %permute data to matlab's expected (y,x,z)
-psi = permute(psi,[1,3,2,4]);
+psi = permute(psi,[2,1,3]);
 psi = squeeze(psi);
 potential = permute(potential,[2,1,3]);
 fclose('all');

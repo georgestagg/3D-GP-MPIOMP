@@ -32,10 +32,10 @@ module parallel_3DWithGhost
     end subroutine
 
     !get local grid sizes
-    subroutine calc_local_idx_3DWithGhost(NX,NY,NZ,PSX,PEX,PSY,PEY,PSZ,PEZ)
+    subroutine calc_local_idx_3DWithGhost(NX,NY,NZ,NGHOST,PSX,PEX,PSY,PEY,PSZ,PEZ)
         implicit none
         integer :: pnx,pny,pnz
-        integer,intent(in)  :: NX,NY,NZ
+        integer,intent(in)  :: NX,NY,NZ,NGHOST
         integer,intent(out) :: PSX,PEX,PSY,PEY,PSZ,PEZ
         pnx = NX/NODE_DIMS(1)
         pny = NY/NODE_DIMS(2)
@@ -43,22 +43,22 @@ module parallel_3DWithGhost
         call MPI_CART_COORDS(MPI_COMM_GRID,COMM_GRID_RANK,3,NODE_COORDS,IERR_3DWG)
 
         !Get local grid (plus ghost)
-        PSX = NODE_COORDS(1)*pnx
-        PEX = NODE_COORDS(1)*pnx + pnx + 1
-        PSY = NODE_COORDS(2)*pny
-        PEY = NODE_COORDS(2)*pny + pny + 1
-        PSZ = NODE_COORDS(3)*pnz
-        PEZ = NODE_COORDS(3)*pnz + pnz + 1
+        PSX = NODE_COORDS(1)*pnx - NGHOST + 1
+        PEX = NODE_COORDS(1)*pnx + pnx + NGHOST
+        PSY = NODE_COORDS(2)*pny - NGHOST + 1
+        PEY = NODE_COORDS(2)*pny + pny + NGHOST
+        PSZ = NODE_COORDS(3)*pnz - NGHOST + 1
+        PEZ = NODE_COORDS(3)*pnz + pnz + NGHOST
 
         !Pick up lost points (plus ghost) on the end
         if (NODE_COORDS(1) .eq. NODE_DIMS(1)-1) then
-            PEX = NX + 1
+            PEX = NX + NGHOST
         end if
         if (NODE_COORDS(2) .eq. NODE_DIMS(2)-1) then
-            PEY = NY + 1
+            PEY = NY + NGHOST
         end if
         if (NODE_COORDS(3) .eq. NODE_DIMS(3)-1) then
-            PEZ = NZ + 1
+            PEZ = NZ + NGHOST
         end if
 
         call MPI_BARRIER(MPI_COMM_GRID, IERR_3DWG)

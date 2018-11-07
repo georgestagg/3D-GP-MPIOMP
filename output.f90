@@ -114,33 +114,35 @@ module io
 		r = nf90_inq_varid(ncdf_id, "gx", x_id)
 		call handle_err(r)
 		!Dont forget to ignore ghost points!
-		istarting(1) = sx+1
-		icount(1) = ex-sx-1
-		r=NF90_put_var(ncdf_id, x_id, GX(sx+1:ex-1),istarting,icount)
+		istarting(1) = sx+NGHOST
+		icount(1) = ex-sx-2*NGHOST+1
+		r=NF90_put_var(ncdf_id, x_id, GX(sx+NGHOST:ex-NGHOST),istarting,icount)
 		call handle_err(r)
-		istarting(1) = sy+1
-		icount(1) = ey-sy-1
-		r=NF90_put_var(ncdf_id, y_id, GY(sy+1:ey-1),istarting,icount)
+		istarting(1) = sy+NGHOST
+		icount(1) = ey-sy-2*NGHOST+1
+		r=NF90_put_var(ncdf_id, y_id, GY(sy+NGHOST:ey-NGHOST),istarting,icount)
 		call handle_err(r)
-		istarting(1) = sz+1
-		icount(1) = ez-sz-1
-		r=NF90_put_var(ncdf_id, z_id, GZ(sz+1:ez-1),istarting,icount)
+		istarting(1) = sz+NGHOST
+		icount(1) = ez-sz-2*NGHOST+1
+		r=NF90_put_var(ncdf_id, z_id, GZ(sz+NGHOST:ez-NGHOST),istarting,icount)
 		call handle_err(r)
 
-		istarting(1) = sx+1
-		icount(1) = ex-sx-1
-		istarting(2) = sy+1
-		icount(2) = ey-sy-1
-		istarting(3) = sz+1
-		icount(3) = ez-sz-1
+		istarting(1) = sx+NGHOST
+		icount(1) = ex-sx-2*NGHOST+1
+		istarting(2) = sy+NGHOST
+		icount(2) = ey-sy-2*NGHOST+1
+		istarting(3) = sz+NGHOST
+		icount(3) = ez-sz-2*NGHOST+1
 		do f = 1,FLUIDS
-			r=NF90_put_var(ncdf_id,f_re_id(f),DBLE(WS%FLUID(f)%GRID(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1)),istarting,icount)
+			r=NF90_put_var(ncdf_id,f_re_id(f),DBLE(WS%FLUID(f)%GRID(sx+NGHOST:ex-NGHOST, &
+						sy+NGHOST:ey-NGHOST,sz+NGHOST:ez-NGHOST)),istarting,icount)
 			call handle_err(r)
-			r=NF90_put_var(ncdf_id,f_im_id(f),DIMAG(WS%FLUID(f)%GRID(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1)),istarting,icount)
+			r=NF90_put_var(ncdf_id,f_im_id(f),DIMAG(WS%FLUID(f)%GRID(sx+NGHOST:ex-NGHOST, &
+						sy+NGHOST:ey-NGHOST,sz+NGHOST:ez-NGHOST)),istarting,icount)
 			call handle_err(r)
 		end do
 
-		r=NF90_put_var(ncdf_id,pot_id,POT(sx+1:ex-1,sy+1:ey-1,sz+1:ez-1),istarting,icount)
+		r=NF90_put_var(ncdf_id,pot_id,POT(sx+NGHOST:ex-NGHOST,sy+NGHOST:ey-NGHOST,sz+NGHOST:ez-NGHOST),istarting,icount)
 		call handle_err(r)
 
 		if(rt == 1) then

@@ -25,6 +25,8 @@ module params
   double precision :: ENERV = 0.75d0
   double precision :: NV = 0.75d0
   double precision :: EDD = 0.0d0
+  double precision :: KD = 1.0d0
+  double precision :: H = 1.0d0
 
   !Multi-component parameters
   integer :: FLUIDS = 1
@@ -84,6 +86,7 @@ module params
   !GLOBALS----------------------------------------------------------------------
   double precision,parameter :: PI = 4.0d0*ATAN(1.0d0)
   complex*16 :: DT,EYE = (0.0d0,1.0d0)
+  integer :: NGHOST = 1
   integer :: da_stat
 
   contains

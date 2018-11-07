@@ -36,8 +36,11 @@ module workspace
 	subroutine init_workspace
 		implicit none
 		integer :: f,m
-		if(RHSType == 0 .or. RHSType == 1) then
-			call calc_local_idx_3DWithGhost(NX,NY,NZ,sx,ex,sy,ey,sz,ez)
+		if(RHSType == 4) then
+			NGHOST = 2
+		end if
+		if(RHSType == 0 .or. RHSType == 1 .or. RHSType == 4) then
+			call calc_local_idx_3DWithGhost(NX,NY,NZ,NGHOST,sx,ex,sy,ey,sz,ez)
 			call setupCartGrid
 			if(RANK .eq. 0) then
 				write(6, '(a)') "Allocating distributed workspace data"
@@ -78,7 +81,7 @@ module workspace
 			sz = 1
 			ez = local_NZ
 		else if(RHSType == 3) then
-			call calc_local_idx_3DWithGhost(NX,NY,NZ,sx,ex,sy,ey,sz,ez)
+			call calc_local_idx_3DWithGhost(NX,NY,NZ,NGHOST,sx,ex,sy,ey,sz,ez)
 			call setupCartGrid
 			if(RANK .eq. 0) then
 				write(6, '(a)') "Allocating distributed fluid field data"
@@ -102,23 +105,25 @@ module workspace
 				TMPWS(3)%FLUID(f)%field_number = f
 			end do
 			call allocateCompGrid(TMPWS(4)%FLUID(1)) !tmp variable for quasi-periodic calcs - shared over fluids
-
+		end if
+		if (INC_MAG_FIELDS) then
 			if(RANK .eq. 0) then
 				write(6, '(a)') "Allocating distributed magnetic field data"
 			end if
-			if (INC_MAG_FIELDS) then
-				ALLOCATE(WS%MAGNETIC(3))
-				do m = 1,3
-					call allocateCompGrid(WS%MAGNETIC(m))
-					call allocateCompGrid(TMPWS(1)%MAGNETIC(m))
-					call allocateCompGrid(TMPWS(2)%MAGNETIC(m))
-					call allocateCompGrid(TMPWS(3)%MAGNETIC(m))
-					WS%MAGNETIC(m)%field_number = FLUIDS + m
-					TMPWS(1)%MAGNETIC(m)%field_number = FLUIDS + m
-					TMPWS(2)%MAGNETIC(m)%field_number = FLUIDS + m
-					TMPWS(3)%MAGNETIC(m)%field_number = FLUIDS + m
-				end do
-			end if
+			ALLOCATE(WS%MAGNETIC(3))
+			ALLOCATE(TMPWS(1)%MAGNETIC(3))
+			ALLOCATE(TMPWS(2)%MAGNETIC(3))
+			ALLOCATE(TMPWS(3)%MAGNETIC(3))
+			do m = 1,3
+				call allocateCompGrid(WS%MAGNETIC(m))
+				call allocateCompGrid(TMPWS(1)%MAGNETIC(m))
+				call allocateCompGrid(TMPWS(2)%MAGNETIC(m))
+				call allocateCompGrid(TMPWS(3)%MAGNETIC(m))
+				WS%MAGNETIC(m)%field_number = FLUIDS + m
+				TMPWS(1)%MAGNETIC(m)%field_number = FLUIDS + m
+				TMPWS(2)%MAGNETIC(m)%field_number = FLUIDS + m
+				TMPWS(3)%MAGNETIC(m)%field_number = FLUIDS + m
+			end do
 		end if
 
 		if(RANK .eq. 0) then

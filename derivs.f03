@@ -86,6 +86,123 @@ contains
 		end select
 	end function
 
+	COMPLEX*16 function aux_d2dx2(f_in,m_in,i,j,k)
+		use params
+		implicit none
+		integer :: i,j,k
+		class(fluid_field) :: f_in
+		class(magnetic_field) :: m_in
+
+		aux_d2dx2 = (exp(-EYE*m_in%GRID_R(i,j,k)*DSPACE)*BC(f_in,i+1,j,k) - 2.0d0*f_in%GRID(i,j,k) &
+					+ CONJG(exp(-EYE*BC(m_in,i-1,j,k)*DSPACE))*BC(f_in,i-1,j,k))/(DSPACE**2.0d0)
+	end function
+
+	COMPLEX*16 function aux_d2dy2(f_in,m_in,i,j,k)
+		use params
+		implicit none
+		integer :: i,j,k
+		class(fluid_field) :: f_in
+		class(magnetic_field) :: m_in
+
+		aux_d2dy2 = (exp(-EYE*m_in%GRID_R(i,j,k)*DSPACE)*BC(f_in,i,j+1,k) - 2.0d0*f_in%GRID(i,j,k) &
+					+ CONJG(exp(-EYE*BC(m_in,i,j-1,k)*DSPACE))*BC(f_in,i,j-1,k))/(DSPACE**2.0d0)
+	end function
+
+	COMPLEX*16 function aux_d2dz2(f_in,m_in,i,j,k)
+		use params
+		implicit none
+		integer :: i,j,k
+		class(fluid_field) :: f_in
+		class(magnetic_field) :: m_in
+
+		aux_d2dz2 = (exp(-EYE*m_in%GRID_R(i,j,k)*DSPACE)*BC(f_in,i,j,k+1) - 2.0d0*f_in%GRID(i,j,k) &
+					+ CONJG(exp(-EYE*BC(m_in,i,j,k-1)*DSPACE))*BC(f_in,i,j,k-1))/(DSPACE**2.0d0)
+	end function
+
+	double precision function curlx_magnetic(m_in_z,m_in_y,i,j,k)
+		use params
+		implicit none
+		integer :: i,j,k
+		class(magnetic_field) :: m_in_z,m_in_y
+		curlx_magnetic = ddy(m_in_z,i,j,k)-ddz(m_in_y,i,j,k)
+	end function
+	double precision function curly_magnetic(m_in_x,m_in_z,i,j,k)
+		use params
+		implicit none
+		integer :: i,j,k
+		class(magnetic_field) :: m_in_x,m_in_z
+		curly_magnetic = ddz(m_in_x,i,j,k)-ddx(m_in_z,i,j,k)
+	end function
+	double precision function curlz_magnetic(m_in_y,m_in_x,i,j,k)
+		use params
+		implicit none
+		integer :: i,j,k
+		class(magnetic_field) :: m_in_y,m_in_x
+		curlz_magnetic = ddx(m_in_y,i,j,k)-ddy(m_in_x,i,j,k)
+	end function
+
+	double precision function curlcurlx_magnetic(m_in_x,m_in_y,m_in_z,i,j,k)
+		use params
+		implicit none
+		integer :: i,j,k
+		class(magnetic_field) :: m_in_x,m_in_y,m_in_z
+
+		if(i>=NX .or. i<=1) then
+			curlcurlx_magnetic = 0.0d0
+			RETURN
+		else if (j>=NY .or. j<=1) then
+			curlcurlx_magnetic = 0.0d0
+			RETURN
+		else if (k>=NZ .or. k<=1) then
+			curlcurlx_magnetic = 0.0d0
+			RETURN
+		end if
+		curlcurlx_magnetic = (curlz_magnetic(m_in_y,m_in_x,i,j+1,k)-curlz_magnetic(m_in_y,m_in_x,i,j-1,k))/(2.0d0*DSPACE) &
+						   - (curly_magnetic(m_in_x,m_in_z,i,j,k+1)-curly_magnetic(m_in_x,m_in_z,i,j,k-1))/(2.0d0*DSPACE)
+	end function
+
+	double precision function curlcurly_magnetic(m_in_x,m_in_y,m_in_z,i,j,k)
+		use params
+		implicit none
+		integer :: i,j,k
+		class(magnetic_field) :: m_in_x,m_in_y,m_in_z
+
+		if(i>=NX .or. i<=1) then
+			curlcurly_magnetic = 0.0d0
+			RETURN
+		else if (j>=NY .or. j<=1) then
+			curlcurly_magnetic = 0.0d0
+			RETURN
+		else if (k>=NZ .or. k<=1) then
+			curlcurly_magnetic = 0.0d0
+			RETURN
+		end if
+
+		curlcurly_magnetic = (curlx_magnetic(m_in_z,m_in_y,i,j,k+1)-curlx_magnetic(m_in_z,m_in_y,i,j,k-1))/(2.0d0*DSPACE) &
+						   - (curlz_magnetic(m_in_y,m_in_x,i+1,j,k)-curlz_magnetic(m_in_y,m_in_x,i-1,j,k))/(2.0d0*DSPACE)
+	end function
+
+	double precision function curlcurlz_magnetic(m_in_x,m_in_y,m_in_z,i,j,k)
+		use params
+		implicit none
+		integer :: i,j,k
+		class(magnetic_field) :: m_in_x,m_in_y,m_in_z
+
+		if(i>=NX .or. i<=1) then
+			curlcurlz_magnetic = H
+			RETURN
+		else if (j>=NY .or. j<=1) then
+			curlcurlz_magnetic = H
+			RETURN
+		else if (k>=NZ .or. k<=1) then
+			curlcurlz_magnetic = H
+			RETURN
+		end if
+
+		curlcurlz_magnetic = (curly_magnetic(m_in_x,m_in_z,i+1,j,k)-curly_magnetic(m_in_x,m_in_z,i-1,j,k))/(2.0d0*DSPACE) &
+						   - (curlx_magnetic(m_in_z,m_in_y,i,j+1,k)-curlx_magnetic(m_in_z,m_in_y,i,j-1,k))/(2.0d0*DSPACE)
+	end function
+
 	complex*16 function BC(field_in,i,j,k)
 		use params
 		implicit none
