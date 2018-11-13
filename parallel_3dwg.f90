@@ -42,6 +42,10 @@ module parallel_3DWithGhost
         pnz = NZ/NODE_DIMS(3)
         call MPI_CART_COORDS(MPI_COMM_GRID,COMM_GRID_RANK,3,NODE_COORDS,IERR_3DWG)
 
+        if(COMM_GRID_RANK .eq. 0) then
+            write(6,'(a,i1,a)') "Using ", NGHOST, " ghost grid points."
+        end if
+
         !Get local grid (plus ghost)
         PSX = NODE_COORDS(1)*pnx - NGHOST + 1
         PEX = NODE_COORDS(1)*pnx + pnx + NGHOST

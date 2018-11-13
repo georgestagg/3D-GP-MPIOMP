@@ -27,23 +27,40 @@ module init
 				call makeConst(WS%FLUID(f),(1.0d0,0.0d0))
 			end do
 		end if
+		if (INC_MAG_FIELDS) then
+			do m = 1,3
+				call makeConst(WS%MAGNETIC(m),(0.0d0,0.0d0))
+			end do
+		end if
 	end subroutine
 
 	subroutine makeConst(field,c)
 		implicit none
-		type(fluid_field) :: field
+		class(computational_field) :: field
 		integer :: i, j, k
 		complex*16 :: c
-
-		!$OMP parallel do private (i,j,k) collapse(3)
-		do k = sz,ez
-			do j = sy,ey
-				do i = sx,ex
-					field%GRID(i,j,k) = c
+		select type(field)
+		class is (magnetic_field)
+			!$OMP parallel do private (i,j,k) collapse(3)
+			do k = sz,ez
+				do j = sy,ey
+					do i = sx,ex
+						field%GRID_R(i,j,k) = DBLE(c)
+					end do
 				end do
 			end do
-		end do
-		!$OMP end parallel do
+			!$OMP end parallel do
+		class is (fluid_field)
+			!$OMP parallel do private (i,j,k) collapse(3)
+			do k = sz,ez
+				do j = sy,ey
+					do i = sx,ex
+						field%GRID(i,j,k) = c
+					end do
+				end do
+			end do
+			!$OMP end parallel do
+		end select
 	end subroutine
 
 	subroutine makeRandomPhase(field)

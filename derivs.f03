@@ -124,6 +124,16 @@ contains
 		implicit none
 		integer :: i,j,k
 		class(magnetic_field) :: m_in_z,m_in_y
+		if(i>=NX .or. i<=1) then
+			curlx_magnetic = 0.0d0
+			RETURN
+		else if (j>=NY .or. j<=1) then
+			curlx_magnetic = 0.0d0
+			RETURN
+		else if (k>=NZ .or. k<=1) then
+			curlx_magnetic = 0.0d0
+			RETURN
+		end if
 		curlx_magnetic = ddy(m_in_z,i,j,k)-ddz(m_in_y,i,j,k)
 	end function
 	double precision function curly_magnetic(m_in_x,m_in_z,i,j,k)
@@ -131,6 +141,16 @@ contains
 		implicit none
 		integer :: i,j,k
 		class(magnetic_field) :: m_in_x,m_in_z
+		if(i>=NX .or. i<=1) then
+			curly_magnetic = 0.0d0
+			RETURN
+		else if (j>=NY .or. j<=1) then
+			curly_magnetic = 0.0d0
+			RETURN
+		else if (k>=NZ .or. k<=1) then
+			curly_magnetic = 0.0d0
+			RETURN
+		end if
 		curly_magnetic = ddz(m_in_x,i,j,k)-ddx(m_in_z,i,j,k)
 	end function
 	double precision function curlz_magnetic(m_in_y,m_in_x,i,j,k)
@@ -138,6 +158,16 @@ contains
 		implicit none
 		integer :: i,j,k
 		class(magnetic_field) :: m_in_y,m_in_x
+		if(i>=NX .or. i<=1) then
+			curlz_magnetic = H
+			RETURN
+		else if (j>=NY .or. j<=1) then
+			curlz_magnetic = H
+			RETURN
+		else if (k>=NZ .or. k<=1) then
+			curlz_magnetic = H
+			RETURN
+		end if
 		curlz_magnetic = ddx(m_in_y,i,j,k)-ddy(m_in_x,i,j,k)
 	end function
 
@@ -147,16 +177,6 @@ contains
 		integer :: i,j,k
 		class(magnetic_field) :: m_in_x,m_in_y,m_in_z
 
-		if(i>=NX .or. i<=1) then
-			curlcurlx_magnetic = 0.0d0
-			RETURN
-		else if (j>=NY .or. j<=1) then
-			curlcurlx_magnetic = 0.0d0
-			RETURN
-		else if (k>=NZ .or. k<=1) then
-			curlcurlx_magnetic = 0.0d0
-			RETURN
-		end if
 		curlcurlx_magnetic = (curlz_magnetic(m_in_y,m_in_x,i,j+1,k)-curlz_magnetic(m_in_y,m_in_x,i,j-1,k))/(2.0d0*DSPACE) &
 						   - (curly_magnetic(m_in_x,m_in_z,i,j,k+1)-curly_magnetic(m_in_x,m_in_z,i,j,k-1))/(2.0d0*DSPACE)
 	end function
@@ -167,17 +187,6 @@ contains
 		integer :: i,j,k
 		class(magnetic_field) :: m_in_x,m_in_y,m_in_z
 
-		if(i>=NX .or. i<=1) then
-			curlcurly_magnetic = 0.0d0
-			RETURN
-		else if (j>=NY .or. j<=1) then
-			curlcurly_magnetic = 0.0d0
-			RETURN
-		else if (k>=NZ .or. k<=1) then
-			curlcurly_magnetic = 0.0d0
-			RETURN
-		end if
-
 		curlcurly_magnetic = (curlx_magnetic(m_in_z,m_in_y,i,j,k+1)-curlx_magnetic(m_in_z,m_in_y,i,j,k-1))/(2.0d0*DSPACE) &
 						   - (curlz_magnetic(m_in_y,m_in_x,i+1,j,k)-curlz_magnetic(m_in_y,m_in_x,i-1,j,k))/(2.0d0*DSPACE)
 	end function
@@ -187,17 +196,6 @@ contains
 		implicit none
 		integer :: i,j,k
 		class(magnetic_field) :: m_in_x,m_in_y,m_in_z
-
-		if(i>=NX .or. i<=1) then
-			curlcurlz_magnetic = H
-			RETURN
-		else if (j>=NY .or. j<=1) then
-			curlcurlz_magnetic = H
-			RETURN
-		else if (k>=NZ .or. k<=1) then
-			curlcurlz_magnetic = H
-			RETURN
-		end if
 
 		curlcurlz_magnetic = (curly_magnetic(m_in_x,m_in_z,i+1,j,k)-curly_magnetic(m_in_x,m_in_z,i-1,j,k))/(2.0d0*DSPACE) &
 						   - (curlx_magnetic(m_in_z,m_in_y,i,j+1,k)-curlx_magnetic(m_in_z,m_in_y,i,j-1,k))/(2.0d0*DSPACE)

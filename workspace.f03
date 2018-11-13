@@ -36,10 +36,7 @@ module workspace
 	subroutine init_workspace
 		implicit none
 		integer :: f,m
-		if(RHSType == 4) then
-			NGHOST = 2
-		end if
-		if(RHSType == 0 .or. RHSType == 1 .or. RHSType == 4) then
+		if(RHSType == 0 .or. RHSType == 1) then
 			call calc_local_idx_3DWithGhost(NX,NY,NZ,NGHOST,sx,ex,sy,ey,sz,ez)
 			call setupCartGrid
 			if(RANK .eq. 0) then
@@ -105,15 +102,37 @@ module workspace
 				TMPWS(3)%FLUID(f)%field_number = f
 			end do
 			call allocateCompGrid(TMPWS(4)%FLUID(1)) !tmp variable for quasi-periodic calcs - shared over fluids
-		end if
-		if (INC_MAG_FIELDS) then
+		else if(RHSType == 4) then
+			NGHOST = 2
+			call calc_local_idx_3DWithGhost(NX,NY,NZ,NGHOST,sx,ex,sy,ey,sz,ez)
+			call setupCartGrid
 			if(RANK .eq. 0) then
-				write(6, '(a)') "Allocating distributed magnetic field data"
+				write(6, '(a)') "Allocating distributed fluid/magnetic workspace data"
 			end if
+			ALLOCATE(TMPWS(3))
+
+			ALLOCATE(WS%FLUID(FLUIDS))
+			ALLOCATE(TMPWS(1)%FLUID(FLUIDS))
+			ALLOCATE(TMPWS(2)%FLUID(FLUIDS))
+			ALLOCATE(TMPWS(3)%FLUID(FLUIDS))
+
 			ALLOCATE(WS%MAGNETIC(3))
 			ALLOCATE(TMPWS(1)%MAGNETIC(3))
 			ALLOCATE(TMPWS(2)%MAGNETIC(3))
 			ALLOCATE(TMPWS(3)%MAGNETIC(3))
+
+			do f = 1,FLUIDS
+				call allocateCompGrid(WS%FLUID(f))
+				call allocateCompGrid(TMPWS(1)%FLUID(f))
+				call allocateCompGrid(TMPWS(2)%FLUID(f))
+				call allocateCompGrid(TMPWS(3)%FLUID(f))
+
+				WS%FLUID(f)%field_number = f
+				TMPWS(1)%FLUID(f)%field_number = f
+				TMPWS(2)%FLUID(f)%field_number = f
+				TMPWS(3)%FLUID(f)%field_number = f
+			end do
+
 			do m = 1,3
 				call allocateCompGrid(WS%MAGNETIC(m))
 				call allocateCompGrid(TMPWS(1)%MAGNETIC(m))
