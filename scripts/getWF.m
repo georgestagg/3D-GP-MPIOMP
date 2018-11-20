@@ -21,6 +21,9 @@ if(p.Results.magnetic ~= 0)
     magx = ncread(fname,'mag_x');
     magy = ncread(fname,'mag_y');
     magz = ncread(fname,'mag_z');
+    magx = permute(magx,[2,1,3]);
+    magy = permute(magy,[2,1,3]);
+    magz = permute(magz,[2,1,3]);
 end
 potential = ncread(fname,'pot');
 psi = real + 1i.*imag;
