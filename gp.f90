@@ -106,6 +106,9 @@ subroutine simulate(steps,set_rt)
         if(ABS(DOMEGADT) > 1e-14) then
             call eulerStepOmega
         end if
+        if(ABS(DHDT) > 1e-14) then
+            call eulerStepH
+        end if
         TIME = TIME + dble(DT)
     end do
 end subroutine

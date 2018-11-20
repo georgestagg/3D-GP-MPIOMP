@@ -8,6 +8,11 @@ module init
 			write (6, "(a)") 'Applying initial condition...'
 		end if
 		TIME = 0.0d0
+		if (INC_MAG_FIELDS) then
+			do m = 1,3
+				call makeConst(WS%MAGNETIC(m),(0.0d0,0.0d0))
+			end do
+		end if
 		if (initialCondType .eq. 1) then
 			do f = 1,FLUIDS
 				call makeRandomPhase(WS%FLUID(f))
@@ -25,11 +30,6 @@ module init
 		else
 			do f = 1,FLUIDS
 				call makeConst(WS%FLUID(f),(1.0d0,0.0d0))
-			end do
-		end if
-		if (INC_MAG_FIELDS) then
-			do m = 1,3
-				call makeConst(WS%MAGNETIC(m),(0.0d0,0.0d0))
 			end do
 		end if
 	end subroutine

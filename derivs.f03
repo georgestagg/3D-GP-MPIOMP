@@ -86,99 +86,15 @@ contains
 		end select
 	end function
 
-	COMPLEX*16 function aux_d2dx2(f_in,m_in,i,j,k)
-		use params
-		implicit none
-		integer :: i,j,k
-		class(fluid_field) :: f_in
-		class(magnetic_field) :: m_in
-
-		aux_d2dx2 = (exp(-EYE*m_in%GRID_R(i,j,k)*DSPACE)*BC(f_in,i+1,j,k) - 2.0d0*f_in%GRID(i,j,k) &
-					+ CONJG(exp(-EYE*BC(m_in,i-1,j,k)*DSPACE))*BC(f_in,i-1,j,k))/(DSPACE**2.0d0)
-	end function
-
-	COMPLEX*16 function aux_d2dy2(f_in,m_in,i,j,k)
-		use params
-		implicit none
-		integer :: i,j,k
-		class(fluid_field) :: f_in
-		class(magnetic_field) :: m_in
-
-		aux_d2dy2 = (exp(-EYE*m_in%GRID_R(i,j,k)*DSPACE)*BC(f_in,i,j+1,k) - 2.0d0*f_in%GRID(i,j,k) &
-					+ CONJG(exp(-EYE*BC(m_in,i,j-1,k)*DSPACE))*BC(f_in,i,j-1,k))/(DSPACE**2.0d0)
-	end function
-
-	COMPLEX*16 function aux_d2dz2(f_in,m_in,i,j,k)
-		use params
-		implicit none
-		integer :: i,j,k
-		class(fluid_field) :: f_in
-		class(magnetic_field) :: m_in
-
-		aux_d2dz2 = (exp(-EYE*m_in%GRID_R(i,j,k)*DSPACE)*BC(f_in,i,j,k+1) - 2.0d0*f_in%GRID(i,j,k) &
-					+ CONJG(exp(-EYE*BC(m_in,i,j,k-1)*DSPACE))*BC(f_in,i,j,k-1))/(DSPACE**2.0d0)
-	end function
-
-	double precision function curlx_magnetic(m_in_z,m_in_y,i,j,k)
-		use params
-		implicit none
-		integer :: i,j,k
-		class(magnetic_field) :: m_in_z,m_in_y
-		if(i>=NX .or. i<=1) then
-			curlx_magnetic = 0.0d0
-			RETURN
-		else if (j>=NY .or. j<=1) then
-			curlx_magnetic = 0.0d0
-			RETURN
-		else if (k>=NZ .or. k<=1) then
-			curlx_magnetic = 0.0d0
-			RETURN
-		end if
-		curlx_magnetic = ddy(m_in_z,i,j,k)-ddz(m_in_y,i,j,k)
-	end function
-	double precision function curly_magnetic(m_in_x,m_in_z,i,j,k)
-		use params
-		implicit none
-		integer :: i,j,k
-		class(magnetic_field) :: m_in_x,m_in_z
-		if(i>=NX .or. i<=1) then
-			curly_magnetic = 0.0d0
-			RETURN
-		else if (j>=NY .or. j<=1) then
-			curly_magnetic = 0.0d0
-			RETURN
-		else if (k>=NZ .or. k<=1) then
-			curly_magnetic = 0.0d0
-			RETURN
-		end if
-		curly_magnetic = ddz(m_in_x,i,j,k)-ddx(m_in_z,i,j,k)
-	end function
-	double precision function curlz_magnetic(m_in_y,m_in_x,i,j,k)
-		use params
-		implicit none
-		integer :: i,j,k
-		class(magnetic_field) :: m_in_y,m_in_x
-		if(i>=NX .or. i<=1) then
-			curlz_magnetic = H
-			RETURN
-		else if (j>=NY .or. j<=1) then
-			curlz_magnetic = H
-			RETURN
-		else if (k>=NZ .or. k<=1) then
-			curlz_magnetic = H
-			RETURN
-		end if
-		curlz_magnetic = ddx(m_in_y,i,j,k)-ddy(m_in_x,i,j,k)
-	end function
-
 	double precision function curlcurlx_magnetic(m_in_x,m_in_y,m_in_z,i,j,k)
 		use params
 		implicit none
 		integer :: i,j,k
 		class(magnetic_field) :: m_in_x,m_in_y,m_in_z
 
-		curlcurlx_magnetic = (curlz_magnetic(m_in_y,m_in_x,i,j+1,k)-curlz_magnetic(m_in_y,m_in_x,i,j-1,k))/(2.0d0*DSPACE) &
-						   - (curly_magnetic(m_in_x,m_in_z,i,j,k+1)-curly_magnetic(m_in_x,m_in_z,i,j,k-1))/(2.0d0*DSPACE)
+		curlcurlx_magnetic = (4.0d0*BC(m_in_x,i,j,k) - BC(m_in_x,i,j+1,k) - BC(m_in_x,i,j-1,k) - BC(m_in_x,i,j,k+1) - BC(m_in_x,i,j,k-1) &
+							+ BC(m_in_y,i+1,j,k) - BC(m_in_y,i,j,k) - BC(m_in_y,i+1,j-1,k) + BC(m_in_y,i,j-1,k) &
+							+ BC(m_in_z,i+1,j,k,2) - BC(m_in_z,i,j,k,2) - BC(m_in_z,i+1,j,k-1,2) + BC(m_in_z,i,j,k-1,2))/(DSPACE**2.0d0)
 	end function
 
 	double precision function curlcurly_magnetic(m_in_x,m_in_y,m_in_z,i,j,k)
@@ -187,8 +103,9 @@ contains
 		integer :: i,j,k
 		class(magnetic_field) :: m_in_x,m_in_y,m_in_z
 
-		curlcurly_magnetic = (curlx_magnetic(m_in_z,m_in_y,i,j,k+1)-curlx_magnetic(m_in_z,m_in_y,i,j,k-1))/(2.0d0*DSPACE) &
-						   - (curlz_magnetic(m_in_y,m_in_x,i+1,j,k)-curlz_magnetic(m_in_y,m_in_x,i-1,j,k))/(2.0d0*DSPACE)
+		curlcurly_magnetic = (4.0d0*BC(m_in_y,i,j,k) - BC(m_in_y,i,j,k+1) - BC(m_in_y,i,j,k-1) - BC(m_in_y,i+1,j,k) - BC(m_in_y,i-1,j,k) &
+							+ BC(m_in_z,i,j+1,k,2) - BC(m_in_z,i,j,k,2) - BC(m_in_z,i,j+1,k-1,2) + BC(m_in_z,i,j,k-1,2) &
+							+ BC(m_in_x,i,j+1,k) - BC(m_in_x,i,j,k) - BC(m_in_x,i-1,j+1,k) + BC(m_in_x,i-1,j,k))/(DSPACE**2.0d0)
 	end function
 
 	double precision function curlcurlz_magnetic(m_in_x,m_in_y,m_in_z,i,j,k)
@@ -197,44 +114,73 @@ contains
 		integer :: i,j,k
 		class(magnetic_field) :: m_in_x,m_in_y,m_in_z
 
-		curlcurlz_magnetic = (curly_magnetic(m_in_x,m_in_z,i+1,j,k)-curly_magnetic(m_in_x,m_in_z,i-1,j,k))/(2.0d0*DSPACE) &
-						   - (curlx_magnetic(m_in_z,m_in_y,i,j+1,k)-curlx_magnetic(m_in_z,m_in_y,i,j-1,k))/(2.0d0*DSPACE)
+		curlcurlz_magnetic = (4.0d0*BC(m_in_z,i,j,k,2) - BC(m_in_z,i+1,j,k,2) - BC(m_in_z,i-1,j,k,2) - BC(m_in_z,i,j+1,k,2) &
+		                    - BC(m_in_z,i,j-1,k,2) &
+							+ BC(m_in_x,i,j,k+1) - BC(m_in_x,i,j,k) - BC(m_in_x,i-1,j,k+1) + BC(m_in_x,i-1,j,k) &
+							+ BC(m_in_y,i,j,k+1) - BC(m_in_y,i,j,k) - BC(m_in_y,i,j-1,k+1) + BC(m_in_y,i,j-1,k))/(DSPACE**2.0d0)
 	end function
 
-	complex*16 function BC(field_in,i,j,k)
+	complex*16 function BC(field_in,i,j,k,dir)
 		use params
 		implicit none
 		class(computational_field) :: field_in
-		integer :: i,j,k,ii,jj,kk
-		!Note - Ghost points means that periodic is the default
-
-		!Zero
-		if((i>=NX .or. i<=1) .and. BCX==2) then
-		  BC = 0.0d0
-		  RETURN
-		else if ((j>=NY .or. j<=1) .and. BCY==2) then
-		  BC = 0.0d0
-		  RETURN
-		else if ((k>=NZ .or. k<=1) .and. BCZ==2) then
-		  BC = 0.0d0
-		  RETURN
-		end if
-
-		!Reflective
-		ii = i
-		jj = j
-		kk = k
-		if(i == NX+1 .and. BCX == 0) ii=NX
-		if(i == 0   .and. BCX == 0) ii=1
-		if(j == NY+1 .and. BCY == 0) jj=NY
-		if(j == 0   .and. BCY == 0) jj=1
-		if(k == NZ+1 .and. BCZ == 0) kk=NZ
-		if(k == 0   .and. BCZ == 0) kk=1
-
+		integer,optional :: dir
+		integer :: d,i,j,k,ii,jj,kk
 		select type(field_in)
 		class is (magnetic_field)
-			BC = field_in%GRID_R(ii,jj,kk)
+			if(present(dir))then
+				d=dir
+			else
+				d=0
+			end if
+
+			if(i>=NX+1 .or. i<=0) then
+			  if (d .eq. 0 .or. d .eq. 1) then
+					BC = 0.0d0
+			  else
+			  		BC=H
+			  end if
+			  RETURN
+			else if (j>=NY+1 .or. j<=0) then
+			  if (d .eq. 0 .or. d .eq. 1) then
+					BC = 0.0d0
+			  else
+			  		BC=H
+			  end if
+			  RETURN
+			else if (k>=NZ+1 .or. k<=0) then
+			  if (d .eq. 0 .or. d .eq. 1) then
+					BC = 0.0d0
+			  else
+			  		BC=H
+			  end if
+			  RETURN
+			end if
+			BC = field_in%GRID_R(i,j,k)
 		class is (fluid_field)
+			!Zero
+			if((i>=NX .or. i<=1) .and. BCX==2) then
+			  BC = 0.0d0
+			  RETURN
+			else if ((j>=NY .or. j<=1) .and. BCY==2) then
+			  BC = 0.0d0
+			  RETURN
+			else if ((k>=NZ .or. k<=1) .and. BCZ==2) then
+			  BC = 0.0d0
+			  RETURN
+			end if
+
+			!Reflective
+			ii = i
+			jj = j
+			kk = k
+			if(i == NX+1 .and. BCX == 0) ii=NX
+			if(i == 0   .and. BCX == 0) ii=1
+			if(j == NY+1 .and. BCY == 0) jj=NY
+			if(j == 0   .and. BCY == 0) jj=1
+			if(k == NZ+1 .and. BCZ == 0) kk=NZ
+			if(k == 0   .and. BCZ == 0) kk=1
+
 			BC = field_in%GRID(ii,jj,kk)
 			!Quasi-periodic fluid field
 			if(i == NX+1 .and. BCX==3) then

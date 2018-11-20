@@ -103,7 +103,6 @@ module workspace
 			end do
 			call allocateCompGrid(TMPWS(4)%FLUID(1)) !tmp variable for quasi-periodic calcs - shared over fluids
 		else if(RHSType == 4) then
-			NGHOST = 2
 			call calc_local_idx_3DWithGhost(NX,NY,NZ,NGHOST,sx,ex,sy,ey,sz,ez)
 			call setupCartGrid
 			if(RANK .eq. 0) then

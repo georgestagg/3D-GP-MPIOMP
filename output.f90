@@ -4,7 +4,7 @@ module io
 	implicit none
 	include 'mpif.h'
 	integer, allocatable :: f_re_id(:), f_im_id(:)
-	integer :: ncdf_id,x_id,y_id,z_id,pot_id,time_id,step_id,r,mpi_info, stat
+	integer :: ncdf_id,x_id,y_id,z_id,pot_id,time_id,step_id,m_x_id,m_y_id,m_z_id,r,mpi_info, stat
 	integer       :: icount(3)
 	integer       :: istarting(3)
 	Contains
@@ -84,6 +84,17 @@ module io
 			r=NF90_def_var(ncdf_id, vname, NF90_DOUBLE, dims, f_im_id(f))
 			call handle_err(r)
 		end do
+		if (INC_MAG_FIELDS) then
+			write(vname,'(a,i0.3,a)') 'mag_x'
+			r=NF90_def_var(ncdf_id, vname, NF90_DOUBLE, dims, m_x_id)
+			call handle_err(r)
+			write(vname,'(a,i0.3,a)') 'mag_y'
+			r=NF90_def_var(ncdf_id, vname, NF90_DOUBLE, dims, m_y_id)
+			call handle_err(r)
+			write(vname,'(a,i0.3,a)') 'mag_z'
+			r=NF90_def_var(ncdf_id, vname, NF90_DOUBLE, dims, m_z_id)
+			call handle_err(r)
+		end if
 
 		r=NF90_def_var(ncdf_id, 'pot' , NF90_DOUBLE, dims, pot_id)
 		call handle_err(r)
@@ -141,6 +152,18 @@ module io
 						sy+NGHOST:ey-NGHOST,sz+NGHOST:ez-NGHOST)),istarting,icount)
 			call handle_err(r)
 		end do
+
+		if (INC_MAG_FIELDS) then
+			r=NF90_put_var(ncdf_id,m_x_id,WS%MAGNETIC(1)%GRID_R(sx+NGHOST:ex-NGHOST, &
+				sy+NGHOST:ey-NGHOST,sz+NGHOST:ez-NGHOST),istarting,icount)
+			call handle_err(r)
+			r=NF90_put_var(ncdf_id,m_y_id,WS%MAGNETIC(2)%GRID_R(sx+NGHOST:ex-NGHOST, &
+				sy+NGHOST:ey-NGHOST,sz+NGHOST:ez-NGHOST),istarting,icount)
+			call handle_err(r)
+			r=NF90_put_var(ncdf_id,m_z_id,WS%MAGNETIC(3)%GRID_R(sx+NGHOST:ex-NGHOST, &
+				sy+NGHOST:ey-NGHOST,sz+NGHOST:ez-NGHOST),istarting,icount)
+			call handle_err(r)
+		end if
 
 		r=NF90_put_var(ncdf_id,pot_id,POT(sx+NGHOST:ex-NGHOST,sy+NGHOST:ey-NGHOST,sz+NGHOST:ez-NGHOST),istarting,icount)
 		call handle_err(r)

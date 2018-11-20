@@ -26,7 +26,7 @@ module params
   double precision :: NV = 0.75d0
   double precision :: EDD = 0.0d0
   double precision :: KD = 1.0d0
-  double precision :: H = 1.0d0
+  double precision :: H = 0.0d0
 
   !Multi-component parameters
   integer :: FLUIDS = 1
@@ -39,6 +39,7 @@ module params
   double precision :: VELZ = 0.0d0
   double precision :: OMEGA = 0.0d0
   double precision :: DOMEGADT = 0.000d0
+  double precision :: DHDT = 0.000d0
   
   !Dissipation
   double precision :: GAMMAC = 0.0d0

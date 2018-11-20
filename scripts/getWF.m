@@ -1,9 +1,10 @@
-function [gridx,gridy,gridz,psi,potential] = getWF(dirarg,frame,varargin)
+function [gridx,gridy,gridz,psi,potential,magx,magy,magz] = getWF(dirarg,frame,varargin)
 p = inputParser;
 p.KeepUnmatched = true;
 addRequired(p,'dirarg');
 addRequired(p,'frame');
 addParameter(p,'prefix','psi');
+addParameter(p,'magnetic','0');
 parse(p,dirarg,frame,varargin{:});
 dirarg = regexprep(dirarg, '/$', '');
 datalocation = strcat(dirarg, '/',p.Results.prefix,'.%06d.nc');
@@ -13,6 +14,14 @@ gridy = ncread(fname,'gy');
 gridz = ncread(fname,'gz');
 real = ncread(fname,'fluid_001_real');
 imag = ncread(fname,'fluid_001_imag');
+magx=0;
+magy=0;
+magz=0;
+if(p.Results.magnetic ~= 0)
+    magx = ncread(fname,'mag_x');
+    magy = ncread(fname,'mag_y');
+    magz = ncread(fname,'mag_z');
+end
 potential = ncread(fname,'pot');
 psi = real + 1i.*imag;
 %permute data to matlab's expected (y,x,z)

@@ -6,3 +6,9 @@ subroutine eulerStepOmega
 		OMEGA = 0.0d0
 	end if
 end subroutine
+
+subroutine eulerStepH
+	use params
+	implicit none
+	H = H + DHDT*dble(DT)
+end subroutine

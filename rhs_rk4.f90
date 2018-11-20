@@ -130,24 +130,20 @@ module rhs_RK4
 		do k = sz+NGHOST,ez-NGHOST
 			do j = sy+NGHOST,ey-NGHOST
 				do i = sx+NGHOST,ex-NGHOST
-					ws_out%MAGNETIC(1)%GRID_R(i,j,k) = -(KD*KD*curlcurlx_magnetic(ws_in%MAGNETIC(1), &
-									ws_in%MAGNETIC(2),ws_in%MAGNETIC(3),i,j,k)) &
-									+ IMAG((CONJG(exp(-EYE*ws_in%MAGNETIC(1)%GRID_R(i,j,k)*DSPACE))&
-									*CONJG(ws_in%FLUID(1)%GRID(i+1,j,k))&
-									+CONJG(ws_in%FLUID(1)%GRID(i,j,k)))*(exp(-EYE*ws_in%MAGNETIC(1)%GRID_R(i,j,k)*DSPACE)&
-									*ws_in%FLUID(1)%GRID(i+1,j,k)-ws_in%FLUID(1)%GRID(i,j,k)))/(2.0d0*DSPACE)
-					ws_out%MAGNETIC(2)%GRID_R(i,j,k) = -(KD*KD*curlcurly_magnetic(ws_in%MAGNETIC(1), &
-									ws_in%MAGNETIC(2),ws_in%MAGNETIC(3),i,j,k)) &
-									+ IMAG((CONJG(exp(-EYE*ws_in%MAGNETIC(2)%GRID_R(i,j,k)*DSPACE))&
-									*CONJG(ws_in%FLUID(1)%GRID(i,j+1,k))&
-									+CONJG(ws_in%FLUID(1)%GRID(i,j,k)))*(exp(-EYE*ws_in%MAGNETIC(2)%GRID_R(i,j,k)*DSPACE)&
-									*ws_in%FLUID(1)%GRID(i,j+1,k)-ws_in%FLUID(1)%GRID(i,j,k)))/(2.0d0*DSPACE)
-					ws_out%MAGNETIC(3)%GRID_R(i,j,k) = -(KD*KD*curlcurlz_magnetic(ws_in%MAGNETIC(1), &
-									ws_in%MAGNETIC(2),ws_in%MAGNETIC(3),i,j,k)) &
-									+ IMAG((CONJG(exp(-EYE*ws_in%MAGNETIC(3)%GRID_R(i,j,k)*DSPACE))&
-									*CONJG(ws_in%FLUID(1)%GRID(i,j,k+1))&
-									+CONJG(ws_in%FLUID(1)%GRID(i,j,k)))*(exp(-EYE*ws_in%MAGNETIC(3)%GRID_R(i,j,k)*DSPACE)&
-									*ws_in%FLUID(1)%GRID(i,j,k+1)-ws_in%FLUID(1)%GRID(i,j,k)))/(2.0d0*DSPACE)
+					ws_out%MAGNETIC(1)%GRID_R(i,j,k) = &
+						- KD*KD*curlcurlx_magnetic(ws_in%MAGNETIC(1), ws_in%MAGNETIC(2),ws_in%MAGNETIC(3),i,j,k) &
+						+ IMAG(EXP(-EYE*ws_in%MAGNETIC(1)%GRID_R(i,j,k))*CONJG(ws_in%FLUID(1)%GRID(i,j,k)) &
+						* BC(ws_in%FLUID(1),i+1,j,k))
+
+					ws_out%MAGNETIC(2)%GRID_R(i,j,k) = &
+						- KD*KD*curlcurly_magnetic(ws_in%MAGNETIC(1), ws_in%MAGNETIC(2),ws_in%MAGNETIC(3),i,j,k) &
+						+ IMAG(EXP(-EYE*ws_in%MAGNETIC(2)%GRID_R(i,j,k))*CONJG(ws_in%FLUID(1)%GRID(i,j,k)) &
+						* BC(ws_in%FLUID(1),i,j+1,k))
+
+					ws_out%MAGNETIC(3)%GRID_R(i,j,k) = &
+						- KD*KD*curlcurlz_magnetic(ws_in%MAGNETIC(1), ws_in%MAGNETIC(2),ws_in%MAGNETIC(3),i,j,k) &
+						+ IMAG(EXP(-EYE*ws_in%MAGNETIC(3)%GRID_R(i,j,k))*CONJG(ws_in%FLUID(1)%GRID(i,j,k)) &
+						* BC(ws_in%FLUID(1),i,j,k+1))
 				end do
 			end do
 		end do
@@ -165,11 +161,15 @@ module rhs_RK4
 			do k = sz+NGHOST,ez-NGHOST
 				do j = sy+NGHOST,ey-NGHOST
 					do i = sx+NGHOST,ex-NGHOST
-						ws_out%FLUID(f)%GRID(i,j,k) = aux_d2dx2(ws_in%FLUID(f),ws_in%MAGNETIC(1),i,j,k) &
-								+ aux_d2dy2(ws_in%FLUID(f),ws_in%MAGNETIC(2),i,j,k) &
-								+ aux_d2dz2(ws_in%FLUID(f),ws_in%MAGNETIC(3),i,j,k) &
-								+ ws_in%FLUID(f)%GRID(i,j,k) &
-								- ws_in%FLUID(f)%GRID(i,j,k)*CONJG(ws_in%FLUID(f)%GRID(i,j,k))*ws_in%FLUID(f)%GRID(i,j,k)
+						ws_out%FLUID(f)%GRID(i,j,k) = &
+			(exp(-EYE*ws_in%MAGNETIC(1)%GRID_R(i,j,k))*BC(ws_in%FLUID(f),i+1,j,k)  - 2.0d0*ws_in%FLUID(f)%GRID(i,j,k) &
+			+ exp(EYE*BC(ws_in%MAGNETIC(1),i-1,j,k))*BC(ws_in%FLUID(f),i-1,j,k) &
+			+ exp(-EYE*ws_in%MAGNETIC(2)%GRID_R(i,j,k))*BC(ws_in%FLUID(f),i,j+1,k) - 2.0d0*ws_in%FLUID(f)%GRID(i,j,k) &
+			+ exp(EYE*BC(ws_in%MAGNETIC(2),i,j-1,k))*BC(ws_in%FLUID(f),i,j-1,k) &
+			+ exp(-EYE*ws_in%MAGNETIC(3)%GRID_R(i,j,k))*BC(ws_in%FLUID(f),i,j,k+1) - 2.0d0*ws_in%FLUID(f)%GRID(i,j,k) &
+			+ exp(EYE*BC(ws_in%MAGNETIC(3),i,j,k-1,2))*BC(ws_in%FLUID(f),i,j,k-1))/(DSPACE**2.0d0) &
+			+ ws_in%FLUID(f)%GRID(i,j,k) &
+			- ws_in%FLUID(f)%GRID(i,j,k)*CONJG(ws_in%FLUID(f)%GRID(i,j,k))*ws_in%FLUID(f)%GRID(i,j,k)
 					end do
 				end do
 			end do
@@ -301,6 +301,8 @@ module rhs_RK4
 			end do
 
 		end if
+
+		if (RHSType .ne. 4) then
 		!$OMP parallel do private (i,j,k) collapse(3)
 		do k = sz+NGHOST,ez-NGHOST
 			do j = sy+NGHOST,ey-NGHOST
@@ -310,6 +312,7 @@ module rhs_RK4
 			end do
 		end do
 		!$OMP end parallel do
+		end if
 	end subroutine
 
 	subroutine halo_swap_WS(ws_in)
@@ -321,7 +324,6 @@ module rhs_RK4
 				call halo_swap_complex(ws_in%FLUID(f)%GRID,n)
 			end do
 		end do
-		call flush()
 		if (INC_MAG_FIELDS) then
 			do m = 1,3
 				do n = 1,NGHOST
