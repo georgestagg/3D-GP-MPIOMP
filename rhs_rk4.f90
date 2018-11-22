@@ -163,11 +163,11 @@ module rhs_RK4
 					do i = sx+NGHOST,ex-NGHOST
 						ws_out%FLUID(f)%GRID(i,j,k) = &
 			-(exp(-EYE*ws_in%MAGNETIC(1)%GRID_R(i,j,k))*BC(ws_in%FLUID(f),i+1,j,k)  - 2.0d0*ws_in%FLUID(f)%GRID(i,j,k) &
-			+ exp(EYE*BC(ws_in%MAGNETIC(1),i-1,j,k))*BC(ws_in%FLUID(f),i-1,j,k) &
+			+ exp(EYE*BC(ws_in%MAGNETIC(1),i-1,j,k,1))*BC(ws_in%FLUID(f),i-1,j,k) &
 			+ exp(-EYE*ws_in%MAGNETIC(2)%GRID_R(i,j,k))*BC(ws_in%FLUID(f),i,j+1,k) - 2.0d0*ws_in%FLUID(f)%GRID(i,j,k) &
-			+ exp(EYE*BC(ws_in%MAGNETIC(2),i,j-1,k))*BC(ws_in%FLUID(f),i,j-1,k) &
+			+ exp(EYE*BC(ws_in%MAGNETIC(2),i,j-1,k,2))*BC(ws_in%FLUID(f),i,j-1,k) &
 			+ exp(-EYE*ws_in%MAGNETIC(3)%GRID_R(i,j,k))*BC(ws_in%FLUID(f),i,j,k+1) - 2.0d0*ws_in%FLUID(f)%GRID(i,j,k) &
-			+ exp(EYE*BC(ws_in%MAGNETIC(3),i,j,k-1,2))*BC(ws_in%FLUID(f),i,j,k-1))/(DSPACE**2.0d0) &
+			+ exp(EYE*BC(ws_in%MAGNETIC(3),i,j,k-1,3))*BC(ws_in%FLUID(f),i,j,k-1))/(DSPACE**2.0d0) &
 			- ws_in%FLUID(f)%GRID(i,j,k) &
 			+ ws_in%FLUID(f)%GRID(i,j,k)*CONJG(ws_in%FLUID(f)%GRID(i,j,k))*ws_in%FLUID(f)%GRID(i,j,k)
 					end do

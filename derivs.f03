@@ -1,7 +1,7 @@
 module derivs
 use workspace
 interface laplacian
-	procedure laplacian_fluid, laplacian_magnetic
+	procedure laplacian_fluid
 end interface
 contains
 	complex*16 function laplacian_fluid(field_in,i,j,k)
@@ -13,21 +13,12 @@ contains
 								  + BC(field_in,i,j+1,k)+BC(field_in,i,j-1,k)&
 								  + BC(field_in,i,j,k+1)+BC(field_in,i,j,k-1))/(DSPACE**2.0d0)
 	end function
-	double precision function laplacian_magnetic(field_in,i,j,k)
-		use params
-		implicit none
-		class(magnetic_field) :: field_in
-		integer :: i,j,k
-		laplacian_magnetic = (-6.0d0*field_in%GRID_R(i,j,k) + BC(field_in,i+1,j,k)+BC(field_in,i-1,j,k)&
-								  + BC(field_in,i,j+1,k)+BC(field_in,i,j-1,k)&
-								  + BC(field_in,i,j,k+1)+BC(field_in,i,j,k-1))/(DSPACE**2.0d0)
-	end function
 
 	COMPLEX*16 function ddx(field_in,i,j,k)
 		use params
 		implicit none
 		integer :: i,j,k
-		class(computational_field) :: field_in
+		class(fluid_field) :: field_in
 		ddx = (BC(field_in,i+1,j,k)-BC(field_in,i-1,j,k))/(2.0d0*DSPACE)
 	end function
 
@@ -35,14 +26,14 @@ contains
 		use params
 		implicit none
 		integer :: i,j,k
-		class(computational_field) :: field_in
+		class(fluid_field) :: field_in
 		ddy = (BC(field_in,i,j+1,k)-BC(field_in,i,j-1,k))/(2.0d0*DSPACE)
 	end function
 
 	COMPLEX*16 function ddz(field_in,i,j,k)
 		use params
 		implicit none
-		class(computational_field) :: field_in
+		class(fluid_field) :: field_in
 		integer :: i,j,k
 		ddz = (BC(field_in,i,j,k+1)-BC(field_in,i,j,k-1))/(2.0d0*DSPACE)
 	end function
@@ -51,39 +42,24 @@ contains
 		use params
 		implicit none
 		integer :: i,j,k
-		class(computational_field) :: field_in
-		select type(field_in)
-		class is (magnetic_field)
-			d2dx2 = (-2.0d0*field_in%GRID_R(i,j,k) + BC(field_in,i+1,j,k)+BC(field_in,i-1,j,k))/(DSPACE**2.0d0)
-		class is (fluid_field)
-			d2dx2 = (-2.0d0*field_in%GRID(i,j,k) + BC(field_in,i+1,j,k)+BC(field_in,i-1,j,k))/(DSPACE**2.0d0)
-		end select
+		class(fluid_field) :: field_in
+		d2dx2 = (-2.0d0*field_in%GRID(i,j,k) + BC(field_in,i+1,j,k)+BC(field_in,i-1,j,k))/(DSPACE**2.0d0)
 	end function
 
 	COMPLEX*16 function d2dy2(field_in,i,j,k)
 		use params
 		implicit none
 		integer :: i,j,k
-		class(computational_field) :: field_in
-		select type(field_in)
-		class is (magnetic_field)
-			d2dy2 = (-2.0d0*field_in%GRID_R(i,j,k) + BC(field_in,i,j+1,k)+BC(field_in,i,j-1,k))/(DSPACE**2.0d0)
-		class is (fluid_field)
-			d2dy2 = (-2.0d0*field_in%GRID(i,j,k) + BC(field_in,i,j+1,k)+BC(field_in,i,j-1,k))/(DSPACE**2.0d0)
-		end select
+		class(fluid_field) :: field_in
+		d2dy2 = (-2.0d0*field_in%GRID(i,j,k) + BC(field_in,i,j+1,k)+BC(field_in,i,j-1,k))/(DSPACE**2.0d0)
 	end function
 
 	COMPLEX*16 function d2dz2(field_in,i,j,k)
 		use params
 		implicit none
 		integer :: i,j,k
-		class(computational_field) :: field_in
-		select type(field_in)
-		class is (magnetic_field)
-			d2dz2 = (-2.0d0*field_in%GRID_R(i,j,k) + BC(field_in,i,j,k+1)+BC(field_in,i,j,k-1))/(DSPACE**2.0d0)
-		class is (fluid_field)
-			d2dz2 = (-2.0d0*field_in%GRID(i,j,k) + BC(field_in,i,j,k+1)+BC(field_in,i,j,k-1))/(DSPACE**2.0d0)
-		end select
+		class(fluid_field) :: field_in
+		d2dz2 = (-2.0d0*field_in%GRID(i,j,k) + BC(field_in,i,j,k+1)+BC(field_in,i,j,k-1))/(DSPACE**2.0d0)
 	end function
 
 	double precision function curlcurlx_magnetic(m_in_x,m_in_y,m_in_z,i,j,k)
@@ -92,9 +68,10 @@ contains
 		integer :: i,j,k
 		class(magnetic_field) :: m_in_x,m_in_y,m_in_z
 
-		curlcurlx_magnetic = (4.0d0*BC(m_in_x,i,j,k) - BC(m_in_x,i,j+1,k) - BC(m_in_x,i,j-1,k) - BC(m_in_x,i,j,k+1) - BC(m_in_x,i,j,k-1) &
-							+ BC(m_in_y,i+1,j,k) - BC(m_in_y,i,j,k) - BC(m_in_y,i+1,j-1,k) + BC(m_in_y,i,j-1,k) &
-							+ BC(m_in_z,i+1,j,k,2) - BC(m_in_z,i,j,k,2) - BC(m_in_z,i+1,j,k-1,2) + BC(m_in_z,i,j,k-1,2))/(DSPACE**2.0d0)
+		curlcurlx_magnetic = (4.0d0*BC(m_in_x,i,j,k,1) - BC(m_in_x,i,j+1,k,1) - BC(m_in_x,i,j-1,k,1) - BC(m_in_x,i,j,k+1,1) &
+		                    - BC(m_in_x,i,j,k-1,1) &
+							+ BC(m_in_y,i+1,j,k,2) - BC(m_in_y,i,j,k,2) - BC(m_in_y,i+1,j-1,k,2) + BC(m_in_y,i,j-1,k,2) &
+							+ BC(m_in_z,i+1,j,k,3) - BC(m_in_z,i,j,k,3) - BC(m_in_z,i+1,j,k-1,3) + BC(m_in_z,i,j,k-1,3))/(DSPACE**2.0d0)
 	end function
 
 	double precision function curlcurly_magnetic(m_in_x,m_in_y,m_in_z,i,j,k)
@@ -103,9 +80,10 @@ contains
 		integer :: i,j,k
 		class(magnetic_field) :: m_in_x,m_in_y,m_in_z
 
-		curlcurly_magnetic = (4.0d0*BC(m_in_y,i,j,k) - BC(m_in_y,i,j,k+1) - BC(m_in_y,i,j,k-1) - BC(m_in_y,i+1,j,k) - BC(m_in_y,i-1,j,k) &
-							+ BC(m_in_z,i,j+1,k,2) - BC(m_in_z,i,j,k,2) - BC(m_in_z,i,j+1,k-1,2) + BC(m_in_z,i,j,k-1,2) &
-							+ BC(m_in_x,i,j+1,k) - BC(m_in_x,i,j,k) - BC(m_in_x,i-1,j+1,k) + BC(m_in_x,i-1,j,k))/(DSPACE**2.0d0)
+		curlcurly_magnetic = (4.0d0*BC(m_in_y,i,j,k,2) - BC(m_in_y,i,j,k+1,2) - BC(m_in_y,i,j,k-1,2) - BC(m_in_y,i+1,j,k,2) &
+		                    - BC(m_in_y,i-1,j,k,2) &
+							+ BC(m_in_z,i,j+1,k,3) - BC(m_in_z,i,j,k,3) - BC(m_in_z,i,j+1,k-1,3) + BC(m_in_z,i,j,k-1,3) &
+							+ BC(m_in_x,i,j+1,k,1) - BC(m_in_x,i,j,k,1) - BC(m_in_x,i-1,j+1,k,1) + BC(m_in_x,i-1,j,k,1))/(DSPACE**2.0d0)
 	end function
 
 	double precision function curlcurlz_magnetic(m_in_x,m_in_y,m_in_z,i,j,k)
@@ -114,10 +92,10 @@ contains
 		integer :: i,j,k
 		class(magnetic_field) :: m_in_x,m_in_y,m_in_z
 
-		curlcurlz_magnetic = (4.0d0*BC(m_in_z,i,j,k,2) - BC(m_in_z,i+1,j,k,2) - BC(m_in_z,i-1,j,k,2) - BC(m_in_z,i,j+1,k,2) &
-		                    - BC(m_in_z,i,j-1,k,2) &
-							+ BC(m_in_x,i,j,k+1) - BC(m_in_x,i,j,k) - BC(m_in_x,i-1,j,k+1) + BC(m_in_x,i-1,j,k) &
-							+ BC(m_in_y,i,j,k+1) - BC(m_in_y,i,j,k) - BC(m_in_y,i,j-1,k+1) + BC(m_in_y,i,j-1,k))/(DSPACE**2.0d0)
+		curlcurlz_magnetic = (4.0d0*BC(m_in_z,i,j,k,3) - BC(m_in_z,i+1,j,k,3) - BC(m_in_z,i-1,j,k,3) - BC(m_in_z,i,j+1,k,3) &
+		                    - BC(m_in_z,i,j-1,k,3) &
+							+ BC(m_in_x,i,j,k+1,1) - BC(m_in_x,i,j,k,1) - BC(m_in_x,i-1,j,k+1,1) + BC(m_in_x,i-1,j,k,1) &
+							+ BC(m_in_y,i,j,k+1,2) - BC(m_in_y,i,j,k,2) - BC(m_in_y,i,j-1,k+1,2) + BC(m_in_y,i,j-1,k,2))/(DSPACE**2.0d0)
 	end function
 
 	complex*16 function BC(field_in,i,j,k,dir)
@@ -125,37 +103,36 @@ contains
 		implicit none
 		class(computational_field) :: field_in
 		integer,optional :: dir
-		integer :: d,i,j,k,ii,jj,kk
+		integer :: i,j,k,ii,jj,kk
 		select type(field_in)
 		class is (magnetic_field)
-			if(present(dir))then
-				d=dir
-			else
-				d=0
+
+			if(i>=NX+1 .or. i<=0 .and. BCMX==0) then
+				BC=H(dir)
+				RETURN
+			else if (j>=NY+1 .or. j<=0 .and. BCMY==0) then
+				BC=H(dir)
+			 	RETURN
+			else if (k>=NZ+1 .or. k<=0 .and. BCMZ==0) then
+				BC=H(dir)
+			 	RETURN
 			end if
 
-			if(i>=NX+1 .or. i<=0) then
-			  if (d .eq. 0 .or. d .eq. 1) then
-					BC = 0.0d0
-			  else
-			  		BC=H
-			  end if
-			  RETURN
-			else if (j>=NY+1 .or. j<=0) then
-			  if (d .eq. 0 .or. d .eq. 1) then
-					BC = 0.0d0
-			  else
-			  		BC=H
-			  end if
-			  RETURN
-			else if (k>=NZ+1 .or. k<=0) then
-			  if (d .eq. 0 .or. d .eq. 1) then
-					BC = 0.0d0
-			  else
-			  		BC=H
-			  end if
-			  RETURN
-			end if
+			!else if (j==0 .and. BCMY==0) then
+			!	select case (dir)
+			!		case(1)
+			!			d=3
+			!		case(2)
+			!			d=1
+			!	    case(3)
+			!			d=2
+			!	end select
+			!	BC=-H(dir)
+			! 	RETURN
+
+
+
+
 			BC = field_in%GRID_R(i,j,k)
 		class is (fluid_field)
 			!Zero

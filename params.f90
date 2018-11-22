@@ -26,7 +26,6 @@ module params
   double precision :: NV = 0.75d0
   double precision :: EDD = 0.0d0
   double precision :: KD = 1.0d0
-  double precision :: H = 0.0d0
 
   !Multi-component parameters
   integer :: FLUIDS = 1
@@ -39,7 +38,6 @@ module params
   double precision :: VELZ = 0.0d0
   double precision :: OMEGA = 0.0d0
   double precision :: DOMEGADT = 0.000d0
-  double precision :: DHDT = 0.000d0
   
   !Dissipation
   double precision :: GAMMAC = 0.0d0
@@ -50,6 +48,12 @@ module params
   integer :: BCZ = 1
   double precision, dimension(:,:),ALLOCATABLE :: NVORTALL
   double precision, dimension(3) :: NVORT = (/ 0.0d0, 0.0d0, 0.0d0 /)
+
+  !Magnetic Potential Boundary Conditions: 0 - fixed H, 1 - periodic
+  integer :: BCMX = 1
+  integer :: BCMY = 1
+  integer :: BCMZ = 1
+  double precision, dimension(3) :: H = (/ 0.0d0, 0.0d0, 0.0d0 /)
 
   !Potentials
   logical :: recalculatePot = .false.

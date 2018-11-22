@@ -4,7 +4,7 @@ p.KeepUnmatched = true;
 addRequired(p,'dirarg');
 addRequired(p,'frame');
 addParameter(p,'prefix','psi');
-addParameter(p,'magnetic','0');
+addParameter(p,'magnetic',0);
 parse(p,dirarg,frame,varargin{:});
 dirarg = regexprep(dirarg, '/$', '');
 datalocation = strcat(dirarg, '/',p.Results.prefix,'.%06d.nc');
