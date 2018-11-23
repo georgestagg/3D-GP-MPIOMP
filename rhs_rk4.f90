@@ -131,17 +131,17 @@ module rhs_RK4
 			do j = sy+NGHOST,ey-NGHOST
 				do i = sx+NGHOST,ex-NGHOST
 					ws_out%MAGNETIC(1)%GRID_R(i,j,k) = &
-						- KD*KD*curlcurlx_magnetic(ws_in%MAGNETIC(1), ws_in%MAGNETIC(2),ws_in%MAGNETIC(3),i,j,k) &
+						- KD*KD*curlcurlx_magnetic(ws_in,i,j,k) &
 						+ IMAG(EXP(-EYE*ws_in%MAGNETIC(1)%GRID_R(i,j,k))*CONJG(ws_in%FLUID(1)%GRID(i,j,k)) &
 						* BC(ws_in%FLUID(1),i+1,j,k))
 
 					ws_out%MAGNETIC(2)%GRID_R(i,j,k) = &
-						- KD*KD*curlcurly_magnetic(ws_in%MAGNETIC(1), ws_in%MAGNETIC(2),ws_in%MAGNETIC(3),i,j,k) &
+						- KD*KD*curlcurly_magnetic(ws_in,i,j,k) &
 						+ IMAG(EXP(-EYE*ws_in%MAGNETIC(2)%GRID_R(i,j,k))*CONJG(ws_in%FLUID(1)%GRID(i,j,k)) &
 						* BC(ws_in%FLUID(1),i,j+1,k))
 
 					ws_out%MAGNETIC(3)%GRID_R(i,j,k) = &
-						- KD*KD*curlcurlz_magnetic(ws_in%MAGNETIC(1), ws_in%MAGNETIC(2),ws_in%MAGNETIC(3),i,j,k) &
+						- KD*KD*curlcurlz_magnetic(ws_in,i,j,k) &
 						+ IMAG(EXP(-EYE*ws_in%MAGNETIC(3)%GRID_R(i,j,k))*CONJG(ws_in%FLUID(1)%GRID(i,j,k)) &
 						* BC(ws_in%FLUID(1),i,j,k+1))
 				end do
@@ -163,11 +163,11 @@ module rhs_RK4
 					do i = sx+NGHOST,ex-NGHOST
 						ws_out%FLUID(f)%GRID(i,j,k) = &
 			-(exp(-EYE*ws_in%MAGNETIC(1)%GRID_R(i,j,k))*BC(ws_in%FLUID(f),i+1,j,k)  - 2.0d0*ws_in%FLUID(f)%GRID(i,j,k) &
-			+ exp(EYE*BC(ws_in%MAGNETIC(1),i-1,j,k,1))*BC(ws_in%FLUID(f),i-1,j,k) &
+			+ exp(EYE*BC(ws_in,i-1,j,k,1))*BC(ws_in%FLUID(f),i-1,j,k) &
 			+ exp(-EYE*ws_in%MAGNETIC(2)%GRID_R(i,j,k))*BC(ws_in%FLUID(f),i,j+1,k) - 2.0d0*ws_in%FLUID(f)%GRID(i,j,k) &
-			+ exp(EYE*BC(ws_in%MAGNETIC(2),i,j-1,k,2))*BC(ws_in%FLUID(f),i,j-1,k) &
+			+ exp(EYE*BC(ws_in,i,j-1,k,2))*BC(ws_in%FLUID(f),i,j-1,k) &
 			+ exp(-EYE*ws_in%MAGNETIC(3)%GRID_R(i,j,k))*BC(ws_in%FLUID(f),i,j,k+1) - 2.0d0*ws_in%FLUID(f)%GRID(i,j,k) &
-			+ exp(EYE*BC(ws_in%MAGNETIC(3),i,j,k-1,3))*BC(ws_in%FLUID(f),i,j,k-1))/(DSPACE**2.0d0) &
+			+ exp(EYE*BC(ws_in,i,j,k-1,3))*BC(ws_in%FLUID(f),i,j,k-1))/(DSPACE**2.0d0) &
 			- ws_in%FLUID(f)%GRID(i,j,k) &
 			+ ws_in%FLUID(f)%GRID(i,j,k)*CONJG(ws_in%FLUID(f)%GRID(i,j,k))*ws_in%FLUID(f)%GRID(i,j,k)
 					end do
