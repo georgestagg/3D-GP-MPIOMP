@@ -131,17 +131,17 @@ module rhs_RK4
 			do j = sy+NGHOST,ey-NGHOST
 				do i = sx+NGHOST,ex-NGHOST
 					ws_out%MAGNETIC(1)%GRID_R(i,j,k) = &
-						- KD*KD*curlcurlx_magnetic(ws_in%MAGNETIC(1), ws_in%MAGNETIC(2),ws_in%MAGNETIC(3),i,j,k) &
+						- KD*KD*curlcurlx_magnetic(ws_in,i,j,k) &
 						+ IMAG(EXP(-EYE*ws_in%MAGNETIC(1)%GRID_R(i,j,k))*CONJG(ws_in%FLUID(1)%GRID(i,j,k)) &
 						* BC(ws_in%FLUID(1),i+1,j,k))
 
 					ws_out%MAGNETIC(2)%GRID_R(i,j,k) = &
-						- KD*KD*curlcurly_magnetic(ws_in%MAGNETIC(1), ws_in%MAGNETIC(2),ws_in%MAGNETIC(3),i,j,k) &
+						- KD*KD*curlcurly_magnetic(ws_in,i,j,k) &
 						+ IMAG(EXP(-EYE*ws_in%MAGNETIC(2)%GRID_R(i,j,k))*CONJG(ws_in%FLUID(1)%GRID(i,j,k)) &
 						* BC(ws_in%FLUID(1),i,j+1,k))
 
 					ws_out%MAGNETIC(3)%GRID_R(i,j,k) = &
-						- KD*KD*curlcurlz_magnetic(ws_in%MAGNETIC(1), ws_in%MAGNETIC(2),ws_in%MAGNETIC(3),i,j,k) &
+						- KD*KD*curlcurlz_magnetic(ws_in,i,j,k) &
 						+ IMAG(EXP(-EYE*ws_in%MAGNETIC(3)%GRID_R(i,j,k))*CONJG(ws_in%FLUID(1)%GRID(i,j,k)) &
 						* BC(ws_in%FLUID(1),i,j,k+1))
 				end do
