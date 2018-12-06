@@ -107,31 +107,16 @@ contains
 		select type(field_in)
 		class is (magnetic_field)
 
-			if(i>=NX+1 .or. i<=0 .and. BCMX==0) then
+			if((i>=NX+1 .or. i<=0) .and. BCMX==0) then
 				BC=H(dir)
 				RETURN
-			else if (j>=NY+1 .or. j<=0 .and. BCMY==0) then
+			else if ((j>=NY+1 .or. j<=0) .and. BCMY==0) then
 				BC=H(dir)
 			 	RETURN
-			else if (k>=NZ+1 .or. k<=0 .and. BCMZ==0) then
+			else if ((k>=NZ+1 .or. k<=0 ).and. BCMZ==0) then
 				BC=H(dir)
 			 	RETURN
 			end if
-
-			!else if (j==0 .and. BCMY==0) then
-			!	select case (dir)
-			!		case(1)
-			!			d=3
-			!		case(2)
-			!			d=1
-			!	    case(3)
-			!			d=2
-			!	end select
-			!	BC=-H(dir)
-			! 	RETURN
-
-
-
 
 			BC = field_in%GRID_R(i,j,k)
 		class is (fluid_field)

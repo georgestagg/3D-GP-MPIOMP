@@ -108,12 +108,13 @@ module workspace
 			if(RANK .eq. 0) then
 				write(6, '(a)') "Allocating distributed fluid/magnetic workspace data"
 			end if
-			ALLOCATE(TMPWS(3))
+			ALLOCATE(TMPWS(4))
 
 			ALLOCATE(WS%FLUID(FLUIDS))
 			ALLOCATE(TMPWS(1)%FLUID(FLUIDS))
 			ALLOCATE(TMPWS(2)%FLUID(FLUIDS))
 			ALLOCATE(TMPWS(3)%FLUID(FLUIDS))
+			ALLOCATE(TMPWS(4)%FLUID(1))
 
 			ALLOCATE(WS%MAGNETIC(3))
 			ALLOCATE(TMPWS(1)%MAGNETIC(3))
@@ -125,13 +126,13 @@ module workspace
 				call allocateCompGrid(TMPWS(1)%FLUID(f))
 				call allocateCompGrid(TMPWS(2)%FLUID(f))
 				call allocateCompGrid(TMPWS(3)%FLUID(f))
-
 				WS%FLUID(f)%field_number = f
 				TMPWS(1)%FLUID(f)%field_number = f
 				TMPWS(2)%FLUID(f)%field_number = f
 				TMPWS(3)%FLUID(f)%field_number = f
 			end do
-
+			call allocateCompGrid(TMPWS(4)%FLUID(1)) !tmp variable for quasi-periodic calcs - shared over fluids
+			INC_MAG_FIELDS = .true.
 			do m = 1,3
 				call allocateCompGrid(WS%MAGNETIC(m))
 				call allocateCompGrid(TMPWS(1)%MAGNETIC(m))
@@ -169,7 +170,7 @@ module workspace
 			call setupDDIK(WS%FLUID(1))
 		end if
 
-		if(RHSType == 3) then
+		if(RHSType == 3 .or. RHSType == 4) then
 			if(RANK .eq. 0) then
 				write(6, '(a)') "Pre-calculating parts of the quasi-periodic field equations"
 			end if
@@ -238,8 +239,8 @@ module workspace
 		do k = sz,ez
 			do j = sy,ey
 				do i = sx,ex
-					field%QP_E(i,j,k,1) = exp(EYE*PI*NVORTALL(2,field%field_number)*GX(i)*GZ(k)/((NX-1)*DSPACE*(NZ-1)*DSPACE)&
-								  -EYE*PI*NVORTALL(3,field%field_number)*GX(i)*GY(j)/((NX-1)*DSPACE*(NY-1)*DSPACE))
+					field%QP_E(i,j,k,1) = EYE*PI*NVORTALL(2,field%field_number)*GX(i)*GZ(k)/((NX-1)*DSPACE*(NZ-1)*DSPACE)&
+								  -EYE*PI*NVORTALL(3,field%field_number)*GX(i)*GY(j)/((NX-1)*DSPACE*(NY-1)*DSPACE)
 				end do
 			end do
 		end do
@@ -248,8 +249,8 @@ module workspace
 		do k = sz,ez
 			do j = sy,ey
 				do i = sx,ex
-					field%QP_E(i,j,k,2) = exp(-EYE*PI*NVORTALL(1,field%field_number)*GY(j)*GZ(k)/((NY-1)*DSPACE*(NZ-1)*DSPACE)&
-								  +EYE*PI*NVORTALL(3,field%field_number)*GY(j)*GX(i)/((NY-1)*DSPACE*(NX-1)*DSPACE))
+					field%QP_E(i,j,k,2) = -EYE*PI*NVORTALL(1,field%field_number)*GY(j)*GZ(k)/((NY-1)*DSPACE*(NZ-1)*DSPACE)&
+								  +EYE*PI*NVORTALL(3,field%field_number)*GY(j)*GX(i)/((NY-1)*DSPACE*(NX-1)*DSPACE)
 				end do
 			end do
 		end do
@@ -258,8 +259,8 @@ module workspace
 		do k = sz,ez
 			do j = sy,ey
 				do i = sx,ex
-					field%QP_E(i,j,k,3) = exp(EYE*PI*NVORTALL(1,field%field_number)*GZ(k)*GY(j)/((NZ-1)*DSPACE*(NY-1)*DSPACE)&
-								  -EYE*PI*NVORTALL(2,field%field_number)*GZ(k)*GX(i)/((NZ-1)*DSPACE*(NX-1)*DSPACE))
+					field%QP_E(i,j,k,3) = EYE*PI*NVORTALL(1,field%field_number)*GZ(k)*GY(j)/((NZ-1)*DSPACE*(NY-1)*DSPACE)&
+								  -EYE*PI*NVORTALL(2,field%field_number)*GZ(k)*GX(i)/((NZ-1)*DSPACE*(NX-1)*DSPACE)
 				end do
 			end do
 		end do

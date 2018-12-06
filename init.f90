@@ -3,7 +3,7 @@ module init
 	use io
 	contains
 	subroutine initCond
-		integer :: f
+		integer :: f,m
 		if(RANK .eq. 0) then
 			write (6, "(a)") 'Applying initial condition...'
 		end if
