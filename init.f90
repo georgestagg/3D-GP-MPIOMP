@@ -66,13 +66,13 @@ module init
 	subroutine makeRandomPhase(field)
 		implicit none
 		type(fluid_field) :: field
-		double precision :: r1, r2
+		double precision :: r1
 		integer :: i, j, k, n
 		integer, dimension(:), allocatable :: seed
 
 		call RANDOM_SEED(size = n)
 		allocate(seed(n))
-		seed = RANK
+		seed = RANK + RSEED
 		call RANDOM_SEED(PUT = seed)
 
 		if(RANK .eq. 0) then
@@ -84,8 +84,7 @@ module init
 			do j = sy,ey
 				do i = sx,ex
 					call random_number(r1)
-					call random_number(r2)
-					field%GRID(i,j,k) = r1*exp(2.0*PI*EYE*r2)
+					field%GRID(i,j,k) = 1.d0*exp(2.0*PI*EYE*r1)
 				end do
 			end do
 		end do
@@ -101,7 +100,7 @@ module init
 
 		call RANDOM_SEED(size = n)
 		allocate(seed(n))
-		seed = RANK
+		seed = RANK + RSEED
 		call RANDOM_SEED(PUT = seed)
 
 		if(RANK .eq. 0) then
@@ -128,7 +127,7 @@ module init
 
 		call RANDOM_SEED(size = n)
 		allocate(seed(n))
-		seed = RANK
+		seed = RANK + RSEED
 		call RANDOM_SEED(PUT = seed)
 
 		ev = ((0.5*NX/PI)**2.0)*ENERV

@@ -37,7 +37,7 @@ module rhs_RK4
 		call RK4_final_step
 
 		!Renormalise WF after imaginary time decay
-		if(RT .eq. 0) then
+		if(RT .eq. 0 .and. (.not. NORENORM)) then
 			do f = 1,FLUIDS
 				call RK4_renormalise_fluid(WS%FLUID(f)%GRID,TMPWS(1)%FLUID(f)%GRID)
 			end do
@@ -110,44 +110,110 @@ module rhs_RK4
 		implicit none
 		type(workspace_t), intent(in) :: ws_in
 		type(workspace_t), intent(out) :: ws_out
-		integer :: f,m
+		integer :: f
 		do f = 1,FLUIDS
 			call RK4_calc_RHS_Fluid(f,ws_in,ws_out)
 		end do
 		if (INC_MAG_FIELDS) then
-			do m = 1,3
-				call RK4_calc_RHS_Magnetic(m,ws_in,ws_out)
-			end do
+			call RK4_calc_RHS_Magnetic(ws_in,ws_out)
 		end if
 	end subroutine
 
-	subroutine RK4_calc_RHS_Magnetic(m,ws_in,ws_out)
+	subroutine RK4_calc_RHS_Magnetic(ws_in,ws_out)
 		implicit none
-		integer :: m,i,j,k
+		integer :: i,j,k
 		type(workspace_t), intent(in) :: ws_in
 		type(workspace_t), intent(out) :: ws_out
-		!$OMP parallel do private (i,j,k) collapse(3)
-		do k = sz+NGHOST,ez-NGHOST
-			do j = sy+NGHOST,ey-NGHOST
-				do i = sx+NGHOST,ex-NGHOST
-					ws_out%MAGNETIC(1)%GRID_R(i,j,k) = &
-						- KD*KD*curlcurlx_magnetic(ws_in,i,j,k) &
-						+ IMAG(EXP(-EYE*ws_in%MAGNETIC(1)%GRID_R(i,j,k))*CONJG(ws_in%FLUID(1)%GRID(i,j,k)) &
-						* BC(ws_in%FLUID(1),i+1,j,k))
 
-					ws_out%MAGNETIC(2)%GRID_R(i,j,k) = &
-						- KD*KD*curlcurly_magnetic(ws_in,i,j,k) &
-						+ IMAG(EXP(-EYE*ws_in%MAGNETIC(2)%GRID_R(i,j,k))*CONJG(ws_in%FLUID(1)%GRID(i,j,k)) &
-						* BC(ws_in%FLUID(1),i,j+1,k))
 
-					ws_out%MAGNETIC(3)%GRID_R(i,j,k) = &
-						- KD*KD*curlcurlz_magnetic(ws_in,i,j,k) &
-						+ IMAG(EXP(-EYE*ws_in%MAGNETIC(3)%GRID_R(i,j,k))*CONJG(ws_in%FLUID(1)%GRID(i,j,k)) &
-						* BC(ws_in%FLUID(1),i,j,k+1))
-				end do
+	!$OMP parallel do private (i,j,k) collapse(3)
+	do k = sz+NGHOST,ez-NGHOST
+		do j = sy+NGHOST,ey-NGHOST
+			do i = sx+NGHOST,ex-NGHOST
+				ws_in%MAGNETIC(1)%GRID_R(i,j,k) = ws_in%MAGNETIC(1)%GRID_R(i,j,k)+EYE*WS%FLUID(1)%QP_E(i,j,k,1)
+				ws_in%MAGNETIC(2)%GRID_R(i,j,k) = ws_in%MAGNETIC(2)%GRID_R(i,j,k)+EYE*WS%FLUID(1)%QP_E(i,j,k,2)
+				ws_in%MAGNETIC(3)%GRID_R(i,j,k) = ws_in%MAGNETIC(3)%GRID_R(i,j,k)+EYE*WS%FLUID(1)%QP_E(i,j,k,3)
 			end do
 		end do
-		!$OMP end parallel do
+	end do
+	!$OMP end parallel do
+
+	!$OMP parallel do private (i,j,k) collapse(3)
+	do k = sz+NGHOST,ez-NGHOST
+		do j = sy+NGHOST,ey-NGHOST
+			do i = sx+NGHOST,ex-NGHOST
+				ws_out%MAGNETIC(1)%GRID_R(i,j,k) = -KD*KD*curlcurlx_magnetic(ws_in,i,j,k)
+			end do
+		end do
+	end do
+	!$OMP end parallel do
+	!$OMP parallel do private (i,j,k) collapse(3)
+	do k = sz+NGHOST,ez-NGHOST
+		do j = sy+NGHOST,ey-NGHOST
+			do i = sx+NGHOST,ex-NGHOST
+				ws_out%MAGNETIC(2)%GRID_R(i,j,k) = -KD*KD*curlcurly_magnetic(ws_in,i,j,k)
+			end do
+		end do
+	end do
+	!$OMP end parallel do
+	!$OMP parallel do private (i,j,k) collapse(3)
+	do k = sz+NGHOST,ez-NGHOST
+		do j = sy+NGHOST,ey-NGHOST
+			do i = sx+NGHOST,ex-NGHOST
+				ws_out%MAGNETIC(3)%GRID_R(i,j,k) = -KD*KD*curlcurlz_magnetic(ws_in,i,j,k)
+			end do
+		end do
+	end do
+	!$OMP end parallel do
+
+	!$OMP parallel do private (i,j,k) collapse(3)
+	do k = sz+NGHOST,ez-NGHOST
+		do j = sy+NGHOST,ey-NGHOST
+			do i = sx+NGHOST,ex-NGHOST
+				ws_in%MAGNETIC(1)%GRID_R(i,j,k) = ws_in%MAGNETIC(1)%GRID_R(i,j,k)-EYE*WS%FLUID(1)%QP_E(i,j,k,1)
+				ws_in%MAGNETIC(2)%GRID_R(i,j,k) = ws_in%MAGNETIC(2)%GRID_R(i,j,k)-EYE*WS%FLUID(1)%QP_E(i,j,k,2)
+				ws_in%MAGNETIC(3)%GRID_R(i,j,k) = ws_in%MAGNETIC(3)%GRID_R(i,j,k)-EYE*WS%FLUID(1)%QP_E(i,j,k,3)
+			end do
+		end do
+	end do
+	!$OMP end parallel do
+
+	!$OMP parallel do private (i,j,k) collapse(3)
+	do k = sz+NGHOST,ez-NGHOST
+		do j = sy+NGHOST,ey-NGHOST
+			do i = sx+NGHOST,ex-NGHOST
+				ws_out%MAGNETIC(1)%GRID_R(i,j,k) = ws_out%MAGNETIC(1)%GRID_R(i,j,k) &
+					+ DIMAG(exp(-EYE*ws_in%MAGNETIC(1)%GRID_R(i,j,k)) &
+					  *CONJG(ws_in%FLUID(1)%GRID(i,j,k))*BC(ws_in%FLUID(1),i+1,j,k))
+			end do
+		end do
+	end do
+	!$OMP end parallel do
+
+	!$OMP parallel do private (i,j,k) collapse(3)
+	do k = sz+NGHOST,ez-NGHOST
+		do j = sy+NGHOST,ey-NGHOST
+			do i = sx+NGHOST,ex-NGHOST
+				ws_out%MAGNETIC(2)%GRID_R(i,j,k) = ws_out%MAGNETIC(2)%GRID_R(i,j,k) &
+					+ DIMAG(exp(-EYE*ws_in%MAGNETIC(2)%GRID_R(i,j,k)) &
+					  *CONJG(ws_in%FLUID(1)%GRID(i,j,k))*BC(ws_in%FLUID(1),i,j+1,k))
+			end do
+		end do
+	end do
+	!$OMP end parallel do
+
+	!$OMP parallel do private (i,j,k) collapse(3)
+	do k = sz+NGHOST,ez-NGHOST
+		do j = sy+NGHOST,ey-NGHOST
+			do i = sx+NGHOST,ex-NGHOST
+				ws_out%MAGNETIC(3)%GRID_R(i,j,k) = ws_out%MAGNETIC(3)%GRID_R(i,j,k) &
+					+ DIMAG(exp(-EYE*ws_in%MAGNETIC(3)%GRID_R(i,j,k)) &
+					  *CONJG(ws_in%FLUID(1)%GRID(i,j,k))*BC(ws_in%FLUID(1),i,j,k+1))
+			end do
+		end do
+	end do
+	!$OMP end parallel do
+
 	end subroutine
 
 	subroutine RK4_calc_RHS_Fluid(f,ws_in,ws_out)
@@ -213,7 +279,7 @@ module rhs_RK4
 			do k = sz,ez
 				do j = sy,ey
 					do i = sx,ex
-						TMPWS(4)%FLUID(1)%GRID(i,j,k) = CONJG(exp(WS%FLUID(f)%QP_E(i,j,k,1)))*ws_in%FLUID(f)%GRID(i,j,k)
+						TMPWS(4)%FLUID(1)%GRID(i,j,k) = CONJG(exp(EYE*WS%FLUID(f)%QP_E(i,j,k,1)))*ws_in%FLUID(f)%GRID(i,j,k)
 					end do
 				end do
 			end do
@@ -222,7 +288,7 @@ module rhs_RK4
 			do k = sz+NGHOST,ez-NGHOST
 				do j = sy+NGHOST,ey-NGHOST
 					do i = sx+NGHOST,ex-NGHOST
-						ws_out%FLUID(f)%GRID(i,j,k)= -ws_in%FLUID(f)%GRID(i,j,k)-exp(WS%FLUID(f)%QP_E(i,j,k,1))&
+						ws_out%FLUID(f)%GRID(i,j,k)= -ws_in%FLUID(f)%GRID(i,j,k)-exp(EYE*WS%FLUID(f)%QP_E(i,j,k,1))&
 							*d2dx2(TMPWS(4)%FLUID(1),i,j,k)
 					end do
 				end do
@@ -232,7 +298,7 @@ module rhs_RK4
 			do k = sz,ez
 				do j = sy,ey
 					do i = sx,ex
-						TMPWS(4)%FLUID(1)%GRID(i,j,k) = CONJG(exp(WS%FLUID(f)%QP_E(i,j,k,2)))*ws_in%FLUID(f)%GRID(i,j,k)
+						TMPWS(4)%FLUID(1)%GRID(i,j,k) = CONJG(exp(EYE*WS%FLUID(f)%QP_E(i,j,k,2)))*ws_in%FLUID(f)%GRID(i,j,k)
 					end do
 				end do
 			end do
@@ -241,7 +307,7 @@ module rhs_RK4
 			do k = sz+NGHOST,ez-NGHOST
 				do j = sy+NGHOST,ey-NGHOST
 					do i = sx+NGHOST,ex-NGHOST
-						ws_out%FLUID(f)%GRID(i,j,k) = ws_out%FLUID(f)%GRID(i,j,k)-exp(WS%FLUID(f)%QP_E(i,j,k,2))&
+						ws_out%FLUID(f)%GRID(i,j,k) = ws_out%FLUID(f)%GRID(i,j,k)-exp(EYE*WS%FLUID(f)%QP_E(i,j,k,2))&
 							*d2dy2(TMPWS(4)%FLUID(1),i,j,k)
 					end do
 				end do
@@ -251,7 +317,7 @@ module rhs_RK4
 			do k = sz,ez
 				do j = sy,ey
 					do i = sx,ex
-						TMPWS(4)%FLUID(1)%GRID(i,j,k) = CONJG(exp(WS%FLUID(f)%QP_E(i,j,k,3)))*ws_in%FLUID(f)%GRID(i,j,k)
+						TMPWS(4)%FLUID(1)%GRID(i,j,k) = CONJG(exp(EYE*WS%FLUID(f)%QP_E(i,j,k,3)))*ws_in%FLUID(f)%GRID(i,j,k)
 					end do
 				end do
 			end do
@@ -260,7 +326,7 @@ module rhs_RK4
 			do k = sz+NGHOST,ez-NGHOST
 				do j = sy+NGHOST,ey-NGHOST
 					do i = sx+NGHOST,ex-NGHOST
-						ws_out%FLUID(f)%GRID(i,j,k) = ws_out%FLUID(f)%GRID(i,j,k)-exp(WS%FLUID(f)%QP_E(i,j,k,3))&
+						ws_out%FLUID(f)%GRID(i,j,k) = ws_out%FLUID(f)%GRID(i,j,k)-exp(EYE*WS%FLUID(f)%QP_E(i,j,k,3))&
 							*d2dz2(TMPWS(4)%FLUID(1),i,j,k)
 					end do
 				end do
@@ -288,7 +354,7 @@ module rhs_RK4
 				do j = sy,ey
 					do i = sx,ex
 						TMPWS(4)%FLUID(1)%GRID(i,j,k) = exp(-EYE*ws_in%MAGNETIC(1)%GRID_R(i,j,k) &
-						                                    -WS%FLUID(f)%QP_E(i,j,k,1))*ws_in%FLUID(f)%GRID(i,j,k)
+						                                    -EYE*WS%FLUID(f)%QP_E(i,j,k,1))*ws_in%FLUID(f)%GRID(i,j,k)
 					end do
 				end do
 			end do
@@ -297,8 +363,8 @@ module rhs_RK4
 			do k = sz+NGHOST,ez-NGHOST
 				do j = sy+NGHOST,ey-NGHOST
 					do i = sx+NGHOST,ex-NGHOST
-						ws_out%FLUID(f)%GRID(i,j,k)= -ws_in%FLUID(f)%GRID(i,j,k)-CONJG(exp(-EYE*ws_in%MAGNETIC(1)%GRID_R(i,j,k) &
-						                                	-WS%FLUID(f)%QP_E(i,j,k,1)))*d2dx2(TMPWS(4)%FLUID(1),i,j,k)
+						ws_out%FLUID(f)%GRID(i,j,k)= ws_in%FLUID(f)%GRID(i,j,k)+0.5d0*CONJG(exp(-EYE*ws_in%MAGNETIC(1)%GRID_R(i,j,k) &
+						                                	-EYE*WS%FLUID(f)%QP_E(i,j,k,1)))*d2dx2(TMPWS(4)%FLUID(1),i,j,k)
 					end do
 				end do
 			end do
@@ -308,7 +374,7 @@ module rhs_RK4
 				do j = sy,ey
 					do i = sx,ex
 						TMPWS(4)%FLUID(1)%GRID(i,j,k) = exp(-EYE*ws_in%MAGNETIC(2)%GRID_R(i,j,k) &
-						                                    -WS%FLUID(f)%QP_E(i,j,k,2))*ws_in%FLUID(f)%GRID(i,j,k)
+						                                    -EYE*WS%FLUID(f)%QP_E(i,j,k,2))*ws_in%FLUID(f)%GRID(i,j,k)
 					end do
 				end do
 			end do
@@ -317,8 +383,8 @@ module rhs_RK4
 			do k = sz+NGHOST,ez-NGHOST
 				do j = sy+NGHOST,ey-NGHOST
 					do i = sx+NGHOST,ex-NGHOST
-						ws_out%FLUID(f)%GRID(i,j,k) = ws_out%FLUID(f)%GRID(i,j,k)-CONJG(exp(-EYE*ws_in%MAGNETIC(2)%GRID_R(i,j,k) &
-						                                    -WS%FLUID(f)%QP_E(i,j,k,2)))*d2dy2(TMPWS(4)%FLUID(1),i,j,k)
+						ws_out%FLUID(f)%GRID(i,j,k) = ws_out%FLUID(f)%GRID(i,j,k)+0.5d0*CONJG(exp(-EYE*ws_in%MAGNETIC(2)%GRID_R(i,j,k) &
+						                                    -EYE*WS%FLUID(f)%QP_E(i,j,k,2)))*d2dy2(TMPWS(4)%FLUID(1),i,j,k)
 					end do
 				end do
 			end do
@@ -328,7 +394,7 @@ module rhs_RK4
 				do j = sy,ey
 					do i = sx,ex
 						TMPWS(4)%FLUID(1)%GRID(i,j,k) = exp(-EYE*ws_in%MAGNETIC(3)%GRID_R(i,j,k) &
-						                                    -WS%FLUID(f)%QP_E(i,j,k,3))*ws_in%FLUID(f)%GRID(i,j,k)
+						                                    -EYE*WS%FLUID(f)%QP_E(i,j,k,3))*ws_in%FLUID(f)%GRID(i,j,k)
 					end do
 				end do
 			end do
@@ -337,8 +403,8 @@ module rhs_RK4
 			do k = sz+NGHOST,ez-NGHOST
 				do j = sy+NGHOST,ey-NGHOST
 					do i = sx+NGHOST,ex-NGHOST
-						ws_out%FLUID(f)%GRID(i,j,k) = ws_out%FLUID(f)%GRID(i,j,k)-CONJG(exp(-EYE*ws_in%MAGNETIC(3)%GRID_R(i,j,k) &
-						                                -WS%FLUID(f)%QP_E(i,j,k,3)))*d2dz2(TMPWS(4)%FLUID(1),i,j,k)
+						ws_out%FLUID(f)%GRID(i,j,k) = ws_out%FLUID(f)%GRID(i,j,k)+0.5d0*CONJG(exp(-EYE*ws_in%MAGNETIC(3)%GRID_R(i,j,k) &
+						                                -EYE*WS%FLUID(f)%QP_E(i,j,k,3)))*d2dz2(TMPWS(4)%FLUID(1),i,j,k)
 					end do
 				end do
 			end do
@@ -350,7 +416,7 @@ module rhs_RK4
 					do j = sy+NGHOST,ey-NGHOST
 						do i = sx+NGHOST,ex-NGHOST
 							ws_out%FLUID(f)%GRID(i,j,k) = ws_out%FLUID(f)%GRID(i,j,k)&
-								+GG(f,p)*ws_in%FLUID(p)%GRID(i,j,k)*CONJG(ws_in%FLUID(p)%GRID(i,j,k))*ws_in%FLUID(f)%GRID(i,j,k)
+								-GG(f,p)*ws_in%FLUID(p)%GRID(i,j,k)*CONJG(ws_in%FLUID(p)%GRID(i,j,k))*ws_in%FLUID(f)%GRID(i,j,k)
 						end do
 					end do
 				end do
@@ -358,15 +424,17 @@ module rhs_RK4
 			end do
 		end if
 
-		!$OMP parallel do private (i,j,k) collapse(3)
-		do k = sz+NGHOST,ez-NGHOST
-			do j = sy+NGHOST,ey-NGHOST
-				do i = sx+NGHOST,ex-NGHOST
-					ws_out%FLUID(f)%GRID(i,j,k)=ws_out%FLUID(f)%GRID(i,j,k)/(EYE-GAMMAC)
-				end do
-			end do
-		end do
-		!$OMP end parallel do
+    if (RHSType .ne. 4) then
+		  !$OMP parallel do private (i,j,k) collapse(3)
+		  do k = sz+NGHOST,ez-NGHOST
+			  do j = sy+NGHOST,ey-NGHOST
+				  do i = sx+NGHOST,ex-NGHOST
+					  ws_out%FLUID(f)%GRID(i,j,k)=ws_out%FLUID(f)%GRID(i,j,k)/(EYE-GAMMAC)
+				  end do
+			  end do
+		  end do
+		  !$OMP end parallel do
+    end if
 	end subroutine
 
 	subroutine halo_swap_WS(ws_in)

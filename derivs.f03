@@ -22,15 +22,16 @@ contains
 		implicit none
 		integer :: i,j,k
 		class(fluid_field) :: field_in
-		ddx = (BC(field_in,i+1,j,k)-BC(field_in,i-1,j,k))/(2.0d0*DSPACE)
+		ddx = (BC(field_in,i,j,k)-BC(field_in,i-1,j,k))/DSPACE
 	end function
+
 
 	COMPLEX*16 function ddy(field_in,i,j,k)
 		use params
 		implicit none
 		integer :: i,j,k
 		class(fluid_field) :: field_in
-		ddy = (BC(field_in,i,j+1,k)-BC(field_in,i,j-1,k))/(2.0d0*DSPACE)
+		ddy = (BC(field_in,i,j,k)-BC(field_in,i,j-1,k))/DSPACE
 	end function
 
 	COMPLEX*16 function ddz(field_in,i,j,k)
@@ -38,7 +39,7 @@ contains
 		implicit none
 		class(fluid_field) :: field_in
 		integer :: i,j,k
-		ddz = (BC(field_in,i,j,k+1)-BC(field_in,i,j,k-1))/(2.0d0*DSPACE)
+		ddz = (BC(field_in,i,j,k)-BC(field_in,i,j,k-1))/DSPACE
 	end function
 
 	COMPLEX*16 function d2dx2(field_in,i,j,k)

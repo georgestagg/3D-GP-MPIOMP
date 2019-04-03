@@ -7,6 +7,7 @@ module params
   integer :: NX = 64
   integer :: NY = 64
   integer :: NZ = 64
+  integer :: RSEED = 0
   double precision :: XSHIFT = 0.0d0
   double precision :: YSHIFT = 0.0d0
   double precision :: ZSHIFT = 0.0d0
@@ -26,6 +27,7 @@ module params
   double precision :: NV = 0.75d0
   double precision :: EDD = 0.0d0
   double precision :: KD = 1.0d0
+  logical :: NORENORM = .false.
 
   !Multi-component parameters
   integer :: FLUIDS = 1

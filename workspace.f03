@@ -114,7 +114,7 @@ module workspace
 			ALLOCATE(TMPWS(1)%FLUID(FLUIDS))
 			ALLOCATE(TMPWS(2)%FLUID(FLUIDS))
 			ALLOCATE(TMPWS(3)%FLUID(FLUIDS))
-			ALLOCATE(TMPWS(4)%FLUID(1))
+			ALLOCATE(TMPWS(4)%FLUID(3))
 
 			ALLOCATE(WS%MAGNETIC(3))
 			ALLOCATE(TMPWS(1)%MAGNETIC(3))
@@ -239,8 +239,8 @@ module workspace
 		do k = sz,ez
 			do j = sy,ey
 				do i = sx,ex
-					field%QP_E(i,j,k,1) = EYE*PI*NVORTALL(2,field%field_number)*GX(i)*GZ(k)/((NX-1)*DSPACE*(NZ-1)*DSPACE)&
-								  -EYE*PI*NVORTALL(3,field%field_number)*GX(i)*GY(j)/((NX-1)*DSPACE*(NY-1)*DSPACE)
+					field%QP_E(i,j,k,1) = PI*NVORTALL(2,field%field_number)*GX(i)*GZ(k)/((NX-1)*DSPACE*(NZ-1)*DSPACE)&
+								  -PI*NVORTALL(3,field%field_number)*GX(i)*GY(j)/((NX-1)*DSPACE*(NY-1)*DSPACE)
 				end do
 			end do
 		end do
@@ -249,8 +249,8 @@ module workspace
 		do k = sz,ez
 			do j = sy,ey
 				do i = sx,ex
-					field%QP_E(i,j,k,2) = -EYE*PI*NVORTALL(1,field%field_number)*GY(j)*GZ(k)/((NY-1)*DSPACE*(NZ-1)*DSPACE)&
-								  +EYE*PI*NVORTALL(3,field%field_number)*GY(j)*GX(i)/((NY-1)*DSPACE*(NX-1)*DSPACE)
+					field%QP_E(i,j,k,2) = -PI*NVORTALL(1,field%field_number)*GY(j)*GZ(k)/((NY-1)*DSPACE*(NZ-1)*DSPACE)&
+								  +PI*NVORTALL(3,field%field_number)*GY(j)*GX(i)/((NY-1)*DSPACE*(NX-1)*DSPACE)
 				end do
 			end do
 		end do
@@ -259,8 +259,8 @@ module workspace
 		do k = sz,ez
 			do j = sy,ey
 				do i = sx,ex
-					field%QP_E(i,j,k,3) = EYE*PI*NVORTALL(1,field%field_number)*GZ(k)*GY(j)/((NZ-1)*DSPACE*(NY-1)*DSPACE)&
-								  -EYE*PI*NVORTALL(2,field%field_number)*GZ(k)*GX(i)/((NZ-1)*DSPACE*(NX-1)*DSPACE)
+					field%QP_E(i,j,k,3) = PI*NVORTALL(1,field%field_number)*GZ(k)*GY(j)/((NZ-1)*DSPACE*(NY-1)*DSPACE)&
+								  -PI*NVORTALL(2,field%field_number)*GZ(k)*GX(i)/((NZ-1)*DSPACE*(NX-1)*DSPACE)
 				end do
 			end do
 		end do
@@ -270,6 +270,7 @@ module workspace
 	subroutine setupGXYZ
 		implicit none
 		integer :: i, j ,k
+		!Note: includes implicit MPI periodicity
 		do k = sz,ez
 			GZ(k) = (k+local_k_offset-1)*DSPACE-ZSHIFT
 		end do		

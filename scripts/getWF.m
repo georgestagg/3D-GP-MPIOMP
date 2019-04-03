@@ -5,6 +5,7 @@ addRequired(p,'dirarg');
 addRequired(p,'frame');
 addParameter(p,'prefix','psi');
 addParameter(p,'magnetic',0);
+addParameter(p,'fnum',1);
 parse(p,dirarg,frame,varargin{:});
 dirarg = regexprep(dirarg, '/$', '');
 datalocation = strcat(dirarg, '/',p.Results.prefix,'.%06d.nc');
@@ -12,8 +13,15 @@ fname = sprintf(datalocation,frame);
 gridx = ncread(fname,'gx');
 gridy = ncread(fname,'gy');
 gridz = ncread(fname,'gz');
-real = ncread(fname,'fluid_001_real');
-imag = ncread(fname,'fluid_001_imag');
+try
+    fnumname = sprintf('fluid_%03d_real',p.Results.fnum);
+    real = ncread(fname,fnumname);
+    fnumname = sprintf('fluid_%03d_imag',p.Results.fnum);
+    imag = ncread(fname,fnumname);
+catch E
+    real = ncread(fname,'fluid_  1_real');
+    imag = ncread(fname,'fluid_  1_imag');
+end
 magx=0;
 magy=0;
 magz=0;
