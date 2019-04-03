@@ -7,6 +7,7 @@ module params
   integer :: NX = 64
   integer :: NY = 64
   integer :: NZ = 64
+  integer :: RSEED = 0
   double precision :: XSHIFT = 0.0d0
   double precision :: YSHIFT = 0.0d0
   double precision :: ZSHIFT = 0.0d0

@@ -55,7 +55,7 @@ module init
 
 		call RANDOM_SEED(size = n)
 		allocate(seed(n))
-		seed = RANK
+		seed = RANK + RSEED
 		call RANDOM_SEED(PUT = seed)
 
 		if(RANK .eq. 0) then
@@ -84,7 +84,7 @@ module init
 
 		call RANDOM_SEED(size = n)
 		allocate(seed(n))
-		seed = RANK
+		seed = RANK + RSEED
 		call RANDOM_SEED(PUT = seed)
 
 		if(RANK .eq. 0) then
@@ -111,7 +111,7 @@ module init
 
 		call RANDOM_SEED(size = n)
 		allocate(seed(n))
-		seed = RANK
+		seed = RANK + RSEED
 		call RANDOM_SEED(PUT = seed)
 
 		ev = ((0.5*NX/PI)**2.0)*ENERV
