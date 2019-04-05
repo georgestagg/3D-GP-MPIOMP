@@ -49,8 +49,7 @@ module io
 		character(len=*) :: fname
 		character(len=1024) :: vname
 
-		call MPI_Info_create(mpi_info, IERR)
-		r=NF90_create(fname, IOR(NF90_NETCDF4, NF90_MPIIO), ncdf_id)
+		r=NF90_create(fname, IOR(nf90_netcdf4, nf90_mpiposix), ncdf_id, comm=MPI_COMM_WORLD, info=MPI_INFO_NULL)
 		call handle_err(r)
 
 		r=NF90_def_dim(ncdf_id, 'x_dim', NX, x_dim_id)
@@ -224,7 +223,7 @@ module io
 			write(6,*) "Opening file: ", TRIM(fname)
 		end if
 
-		r = NF90_open(fname,NF90_NOWRITE,rwf_ncid)
+		r = NF90_open(fname,IOR(nf90_nowrite, nf90_mpiio), rwf_ncid, comm=MPI_COMM_WORLD, info=MPI_INFO_NULL)
 		call handle_err(r)
 
 		deallocate(rwf_re_id,STAT=stat)
@@ -292,7 +291,7 @@ module io
 
 		h = 0.0d0
 		
-		r = NF90_open(fname,IOR(nf90_netcdf4,nf90_MPIIO),rsurf_ncid)
+		r = NF90_open(fname,IOR(nf90_nowrite, nf90_mpiio),rsurf_ncid, comm=MPI_COMM_WORLD, info=MPI_INFO_NULL)
 		call handle_err(r)
 		r = NF90_inq_varid(rsurf_ncid,  "surf", rsurf_surf_id)
 		call handle_err(r)
@@ -346,7 +345,7 @@ module io
 			write(6,*) "Opening file: ", TRIM(fname)
 		end if
 
-		r = NF90_open(fname,IOR(nf90_netcdf4,nf90_MPIIO),rwf_ncid)
+		r = NF90_open(fname,IOR(nf90_nowrite, nf90_mpiio),rwf_ncid, comm=MPI_COMM_WORLD, info=MPI_INFO_NULL)
 		call handle_err(r)
 
 		deallocate(rwf_re_id,STAT=stat)
