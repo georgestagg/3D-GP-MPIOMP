@@ -48,8 +48,7 @@ module io
 		integer :: x_dim_id,y_dim_id,z_dim_id
 		character(len=*) :: fname
 		character(len=1024) :: vname
-
-		r=NF90_create(fname, IOR(nf90_netcdf4, nf90_mpiposix), ncdf_id, comm=MPI_COMM_WORLD, info=MPI_INFO_NULL)
+		r=NF90_create(fname, NF90_NETCDF4 , ncdf_id, comm=MPI_COMM_WORLD, info=MPI_INFO_NULL)
 		call handle_err(r)
 
 		r=NF90_def_dim(ncdf_id, 'x_dim', NX, x_dim_id)
