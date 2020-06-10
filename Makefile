@@ -1,5 +1,5 @@
 FC = $(shell nf-config --fc)
-INCLUDES = $(shell nf-config --fflags) -I$(shell mpif90 --showme:incdirs) $(foreach d,$(subst :, ,$(CPATH)),-I$d) -I/usr/include
+INCLUDES = $(shell nf-config --fflags) -I$(shell mpif90 --showme:incdirs) $(foreach d,$(subst :, ,$(CPATH)),-I$d)
 FCFLAGS = -march=native -Wunused -fopenmp $(INCLUDES)
 LDFLAGS = -lm -lfftw3_omp -lfftw3_mpi -lfftw3 $(shell nf-config --flibs) $(shell mpif90 --showme:link)
 PROGRAMS = gp
