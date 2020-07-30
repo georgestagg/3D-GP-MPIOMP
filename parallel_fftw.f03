@@ -6,7 +6,7 @@ module parallel_FFTW
     type(C_PTR) :: fftw_forward_plan,fftw_backward_plan, fftw_forward_plan_dens,fftw_backward_plan_dens
     type(C_PTR) :: C_GRID_FFTW, C_GRID_T1_FFTW
     integer(C_INT) :: IERR_FFTW
-    integer(C_INTPTR_T) :: alloc_local,local_NZ,local_k_offset,C_NX,C_NY,C_NZ
+    integer(C_INTPTR_T) :: alloc_local,local_NZ,local_k_offset,local_NY,local_j_offset,C_NX,C_NY,C_NZ
     contains
     subroutine init_parallel_FFTW
         implicit none
@@ -39,6 +39,8 @@ module parallel_FFTW
         call MPI_COMM_RANK(MPI_COMM_FFTW, COMM_FFTW_RANK, IERR_MPI)
         call MPI_BARRIER(MPI_COMM_FFTW, IERR_MPI)
         alloc_local = fftw_mpi_local_size_3d(C_NZ,C_NY,C_NX,MPI_COMM_FFTW,local_NZ,local_k_offset);
+		alloc_local = fftw_mpi_local_size_3d_transposed(C_NZ,C_NY,C_NX,MPI_COMM_FFTW, &
+						local_NZ,local_k_offset, local_NY, local_j_offset);
 
         C_GRID_FFTW = fftw_alloc_complex(alloc_local)
         call c_f_pointer(C_GRID_FFTW, GRID, [C_NX, C_NY, local_NZ])

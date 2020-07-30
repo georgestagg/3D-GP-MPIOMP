@@ -152,14 +152,14 @@ module io
 		end do
 
 		if (INC_MAG_FIELDS) then
-			r=NF90_put_var(ncdf_id,m_x_id,WS%MAGNETIC(1)%GRID_R(sx+NGHOST:ex-NGHOST, &
-				sy+NGHOST:ey-NGHOST,sz+NGHOST:ez-NGHOST),istarting,icount)
+			r=NF90_put_var(ncdf_id,m_x_id,DBLE(WS%MAGNETIC(1)%GRID(sx+NGHOST:ex-NGHOST, &
+				sy+NGHOST:ey-NGHOST,sz+NGHOST:ez-NGHOST)),istarting,icount)
 			call handle_err(r)
-			r=NF90_put_var(ncdf_id,m_y_id,WS%MAGNETIC(2)%GRID_R(sx+NGHOST:ex-NGHOST, &
-				sy+NGHOST:ey-NGHOST,sz+NGHOST:ez-NGHOST),istarting,icount)
+			r=NF90_put_var(ncdf_id,m_y_id,DBLE(WS%MAGNETIC(2)%GRID(sx+NGHOST:ex-NGHOST, &
+				sy+NGHOST:ey-NGHOST,sz+NGHOST:ez-NGHOST)),istarting,icount)
 			call handle_err(r)
-			r=NF90_put_var(ncdf_id,m_z_id,WS%MAGNETIC(3)%GRID_R(sx+NGHOST:ex-NGHOST, &
-				sy+NGHOST:ey-NGHOST,sz+NGHOST:ez-NGHOST),istarting,icount)
+			r=NF90_put_var(ncdf_id,m_z_id,DBLE(WS%MAGNETIC(3)%GRID(sx+NGHOST:ex-NGHOST, &
+				sy+NGHOST:ey-NGHOST,sz+NGHOST:ez-NGHOST)),istarting,icount)
 			call handle_err(r)
 		end if
 

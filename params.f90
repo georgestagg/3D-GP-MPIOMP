@@ -19,7 +19,12 @@ module params
   integer :: DUMPWF = 100
   integer :: DUMPUTIL = 100
 
-  !GPE Type: 0 Natural Units - 1 Hamonic Oscillator Units - 2 Natural Units GPE with DDI (Split-step method)
+  !GPE Type:
+  ! 0 - Natural Units
+  ! 1 - Hamonic Oscillator Units
+  ! 2 - Natural Units GPE with DDI (Split-step method)
+  ! 3 - Quasi-periodic GPE
+  ! 4 - Quasi-periodic Ginzburg–Landau equations (WIP)
   integer :: RHSType = 1
   double precision :: harm_osc_C = 300.0d0
   double precision :: harm_osc_mu = 10.136d0
@@ -44,18 +49,19 @@ module params
   !Dissipation
   double precision :: GAMMAC = 0.0d0
 
-  !Boundary Conditions: 0 - reflective, 1 - periodic
+  !Boundary Conditions: 0 - reflective, 1 - periodic, 3 - quasi-periodic
   integer :: BCX = 1
   integer :: BCY = 1
   integer :: BCZ = 1
   double precision, dimension(:,:),ALLOCATABLE :: NVORTALL
   double precision, dimension(3) :: NVORT = (/ 0.0d0, 0.0d0, 0.0d0 /)
 
-  !Magnetic Potential Boundary Conditions: 0 - fixed H, 1 - periodic
+  !Magnetic Potential Boundary Conditions: 0 - reflective, 1 - periodic
   integer :: BCMX = 1
   integer :: BCMY = 1
   integer :: BCMZ = 1
-  double precision, dimension(3) :: H = (/ 0.0d0, 0.0d0, 0.0d0 /)
+  double precision :: BX = 0.0d0 ! Fixed external magnetic field
+  double precision :: BZ = 0.0d0
 
   !Potentials
   logical :: recalculatePot = .false.

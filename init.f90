@@ -45,7 +45,7 @@ module init
 			do k = sz,ez
 				do j = sy,ey
 					do i = sx,ex
-						field%GRID_R(i,j,k) = DBLE(c)
+						field%GRID(i,j,k) = DBLE(c)
 					end do
 				end do
 			end do

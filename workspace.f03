@@ -4,7 +4,6 @@ module workspace
 	!Dynamic number of computational grids
 	type computational_field
 		complex(C_DOUBLE_COMPLEX), pointer :: GRID(:,:,:)
-		real(C_DOUBLE), pointer :: GRID_R(:,:,:)
 		integer :: field_number
 	end type
 	type, extends(computational_field) :: fluid_field
@@ -31,6 +30,7 @@ module workspace
 	real(C_DOUBLE), dimension(:,:,:), allocatable :: POT
 	real(C_DOUBLE), dimension(:), allocatable :: GX,GY,GZ,KX,KY,KZ
 	integer :: sx,sy,sz,ex,ey,ez,cur_step,RT
+	integer :: ksx,ksy,ksz,kex,key,kez
 	double precision :: TIME,DKSPACE,EDD_T1,EDD_T2
 	contains
 	subroutine init_workspace
@@ -189,12 +189,7 @@ module workspace
 	subroutine allocateCompGrid(field)
 		implicit none
 		class(computational_field) :: field
-		select type(field)
-		class is (fluid_field)
-			ALLOCATE(field%GRID(sx:ex,sy:ey,sz:ez))
-		class is (magnetic_field)
-			ALLOCATE(field%GRID_R(sx:ex,sy:ey,sz:ez))
-		end select
+		ALLOCATE(field%GRID(sx:ex,sy:ey,sz:ez))
 	end subroutine
 
 	subroutine setupDDIK(field)
