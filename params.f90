@@ -1,8 +1,8 @@
 module params
   !Iterations to run
-  integer :: NSTEPS=10000
-  integer :: ISTEPS=0
-  
+  integer :: NSTEPS = 10000
+  integer :: ISTEPS = 0
+
   !Resolution
   integer :: NX = 64
   integer :: NY = 64
@@ -31,13 +31,12 @@ module params
   double precision :: ENERV = 0.75d0
   double precision :: NV = 0.75d0
   double precision :: EDD = 0.0d0
-  double precision :: KD = 1.0d0
+  double precision :: KD = 0.0d0
   logical :: NORENORM = .false.
 
   !Multi-component parameters
   integer :: FLUIDS = 1
-  double precision, dimension(:,:),ALLOCATABLE :: GG
-  logical :: INC_MAG_FIELDS = .false.
+  double precision, dimension(:, :), ALLOCATABLE :: GG
 
   !Linearly/Rotating moving frame
   double precision :: VELX = 0.0d0
@@ -45,7 +44,7 @@ module params
   double precision :: VELZ = 0.0d0
   double precision :: OMEGA = 0.0d0
   double precision :: DOMEGADT = 0.000d0
-  
+
   !Dissipation
   double precision :: GAMMAC = 0.0d0
 
@@ -53,15 +52,8 @@ module params
   integer :: BCX = 1
   integer :: BCY = 1
   integer :: BCZ = 1
-  double precision, dimension(:,:),ALLOCATABLE :: NVORTALL
-  double precision, dimension(3) :: NVORT = (/ 0.0d0, 0.0d0, 0.0d0 /)
-
-  !Magnetic Potential Boundary Conditions: 0 - reflective, 1 - periodic
-  integer :: BCMX = 1
-  integer :: BCMY = 1
-  integer :: BCMZ = 1
-  double precision :: BX = 0.0d0 ! Fixed external magnetic field
-  double precision :: BZ = 0.0d0
+  double precision, dimension(:, :), ALLOCATABLE :: NVORTALL
+  double precision, dimension(3) :: NVORT = (/0.0d0, 0.0d0, 0.0d0/)
 
   !Potentials
   logical :: recalculatePot = .false.
@@ -82,45 +74,44 @@ module params
   double precision :: TRAPHEIGHT = 0.0d0
   double precision :: TRAPR = 0.0d0
   double precision :: TRAPBETA = 0.5d0
-  double precision :: TX=0.0d0
-  double precision :: TY=0.0d0
-  double precision :: TZ=0.0d0
+  double precision :: TX = 0.0d0
+  double precision :: TY = 0.0d0
+  double precision :: TZ = 0.0d0
   double precision :: TXSCALE = 1.0d0
   double precision :: TYSCALE = 1.0d0
   double precision :: TZSCALE = 1.0d0
 
   integer :: initialCondType = 0
 
-
   character(2048) :: ICRfilename
   character(2048) :: SURFfilename
   integer :: INITSTEP = 0
 
   !GLOBALS----------------------------------------------------------------------
-  double precision,parameter :: PI = 4.0d0*ATAN(1.0d0)
-  complex*16 :: DT,EYE = (0.0d0,1.0d0)
+  double precision, parameter :: PI = 4.0d0*ATAN(1.0d0)
+  complex*16 :: DT, EYE = (0.0d0, 1.0d0)
   integer :: NGHOST = 1
   integer :: da_stat
 
-  contains
+contains
   subroutine init_params
     IMPLICIT NONE
     ICRfilename = repeat(" ", 2048) !Clear memory so entire string is blank
     SURFfilename = repeat(" ", 2048)
-    call set_fluid_interactions(1,reshape((/ 1.0d0 /), (/ 1, 1 /)))
+    call set_fluid_interactions(1, reshape((/1.0d0/), (/1, 1/)))
     include 'params.in'
     if (FLUIDS == 1) then
-      ALLOCATE(NVORTALL(3,1))
-      NVORTALL(:,1) = NVORT
+      ALLOCATE (NVORTALL(3, 1))
+      NVORTALL(:, 1) = NVORT
     end if
   END subroutine
 
-  subroutine set_fluid_interactions(N,FG)
+  subroutine set_fluid_interactions(N, FG)
     IMPLICIT NONE
-    integer :: N,stat
-    double precision :: FG(:,:)
-    DEALLOCATE(GG,STAT=stat)
-    ALLOCATE(GG(N,N))
+    integer :: N, stat
+    double precision :: FG(:, :)
+    DEALLOCATE (GG, STAT=stat)
+    ALLOCATE (GG(N, N))
     GG = FG
     FLUIDS = N
   END subroutine
