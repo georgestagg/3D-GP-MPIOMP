@@ -125,8 +125,7 @@ contains
         do k = sz + NGHOST, ez - NGHOST
           do j = sy + NGHOST, ey - NGHOST
             do i = sx + NGHOST, ex - NGHOST
-              ws_out%FLUID(f)%GRID(i, j, k) = ws_out%FLUID(f)%GRID(i, j, k) &
-                                              + GG(f, p)*ws_in%FLUID(p)%GRID(i, j, k) &
+              ws_out%FLUID(f)%GRID(i, j, k) = ws_out%FLUID(f)%GRID(i, j, k) + GG(f, p)*ws_in%FLUID(p)%GRID(i, j, k) &
                                               *CONJG(ws_in%FLUID(p)%GRID(i, j, k))*ws_in%FLUID(f)%GRID(i, j, k)
             end do
           end do

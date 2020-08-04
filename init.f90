@@ -3,11 +3,21 @@ module init
   use io
 contains
   subroutine initCond
-    integer :: f
+    integer :: f, n
+    integer, dimension(:), allocatable :: seed
     if (RANK .eq. 0) then
       write (6, "(a)") 'Applying initial condition...'
     end if
     TIME = 0.0d0
+
+    if (RANK .eq. 0) then
+      write (6, "(a)") 'Seeding RNG...'
+    end if
+    call RANDOM_SEED(size=n)
+    allocate (seed(n))
+    seed = RANK + RSEED
+    call RANDOM_SEED(PUT=seed)
+
     if (initialCondType .eq. 1) then
       do f = 1, FLUIDS
         call makeRandomPhase(WS%FLUID(f))
@@ -49,15 +59,9 @@ contains
     implicit none
     type(fluid_field) :: field
     double precision :: r1
-    integer :: i, j, k, n
-    integer, dimension(:), allocatable :: seed
+    integer :: i, j, k
 
-    call RANDOM_SEED(size=n)
-    allocate (seed(n))
-    seed = RANK + RSEED
-    call RANDOM_SEED(PUT=seed)
-
-    if (RANK .eq. 0) then
+    if (RANK .eq. 1) then
       write (6, *) ' Imposing a random phase IC...'
     end if
 
@@ -77,13 +81,7 @@ contains
     implicit none
     type(fluid_field) :: field
     double precision :: r1, s
-    integer :: i, j, k, n
-    integer, dimension(:), allocatable :: seed
-
-    call RANDOM_SEED(size=n)
-    allocate (seed(n))
-    seed = RANK + RSEED
-    call RANDOM_SEED(PUT=seed)
+    integer :: i, j, k
 
     if (RANK .eq. 0) then
       write (6, *) ' Imposing a random density perturbation...'
@@ -104,13 +102,7 @@ contains
   subroutine makeNonEquibPhase
     implicit none
     double precision :: rpKC, rpAMP, phi, ev
-    integer :: i, j, k, n
-    integer, dimension(:), allocatable :: seed
-
-    call RANDOM_SEED(size=n)
-    allocate (seed(n))
-    seed = RANK + RSEED
-    call RANDOM_SEED(PUT=seed)
+    integer :: i, j, k
 
     ev = ((0.5*NX/PI)**2.0)*ENERV
     rpAMP = sqrt(((0.11095279993106999d0*NV**2.5d0)*(NX*NY*NZ))/(ev**1.5d0))
