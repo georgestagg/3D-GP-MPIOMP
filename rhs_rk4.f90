@@ -112,9 +112,14 @@ contains
             if (VELZ > 0) then
               ws_out%FLUID(f)%GRID(i, j, k) = ws_out%FLUID(f)%GRID(i, j, k) + VELZ*EYE*ddz(ws_in%FLUID(f), i, j, k)
             end if
-            if (OMEGA > 0) then
-              ws_out%FLUID(f)%GRID(i, j, k) = ws_out%FLUID(f)%GRID(i, j, k) + OMEGA*EYE*(GX(i)*ddy(ws_in%FLUID(f), i, j, k) &
-                                                                                         - GY(j)*ddx(ws_in%FLUID(f), i, j, k))
+            if (ANY(OMEGAALL .ne. 0.0d0)) then
+              ws_out%FLUID(f)%GRID(i, j, k) = ws_out%FLUID(f)%GRID(i, j, k) &
+                                              - OMEGAALL(1, f)*EYE*(GY(j)*ddz(ws_in%FLUID(f), i, j, k) &
+                                                                    - GZ(k)*ddy(ws_in%FLUID(f), i, j, k)) &
+                                              - OMEGAALL(2, f)*EYE*(GZ(k)*ddx(ws_in%FLUID(f), i, j, k) &
+                                                                    - GX(i)*ddz(ws_in%FLUID(f), i, j, k)) &
+                                              - OMEGAALL(3, f)*EYE*(GX(i)*ddy(ws_in%FLUID(f), i, j, k) &
+                                                                    - GY(j)*ddx(ws_in%FLUID(f), i, j, k))
             end if
           end do
         end do
@@ -141,8 +146,16 @@ contains
             ws_out%FLUID(f)%GRID(i, j, k) = -0.5d0*laplacian(ws_in%FLUID(f), i, j, k) &
                                             + harm_osc_C*ws_in%FLUID(f)%GRID(i, j, k)*ws_in%FLUID(f)%GRID(i, j, k) &
                                             *CONJG(ws_in%FLUID(f)%GRID(i, j, k)) + POT(i, j, k)*ws_in%FLUID(f)%GRID(i, j, k) &
-                                            - harm_osc_mu*ws_in%FLUID(f)%GRID(i, j, k) &
-                                            + OMEGA*EYE*(GX(i)*ddy(ws_in%FLUID(f), i, j, k) - GY(j)*ddx(ws_in%FLUID(f), i, j, k))
+                                            - harm_osc_mu*ws_in%FLUID(f)%GRID(i, j, k)
+            if (ANY(OMEGAALL .ne. 0.0d0)) then
+              ws_out%FLUID(f)%GRID(i, j, k) = ws_out%FLUID(f)%GRID(i, j, k) &
+                                              - OMEGAALL(1, f)*EYE*(GY(j)*ddz(ws_in%FLUID(f), i, j, k) &
+                                                                    - GZ(k)*ddy(ws_in%FLUID(f), i, j, k)) &
+                                              - OMEGAALL(2, f)*EYE*(GZ(k)*ddx(ws_in%FLUID(f), i, j, k) &
+                                                                    - GX(i)*ddz(ws_in%FLUID(f), i, j, k)) &
+                                              - OMEGAALL(3, f)*EYE*(GX(i)*ddy(ws_in%FLUID(f), i, j, k) &
+                                                                    - GY(j)*ddx(ws_in%FLUID(f), i, j, k))
+            end if
           end do
         end do
       end do

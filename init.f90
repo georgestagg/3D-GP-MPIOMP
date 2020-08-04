@@ -11,7 +11,7 @@ contains
     TIME = 0.0d0
 
     if (RANK .eq. 0) then
-      write (6, "(a)") 'Seeding RNG...'
+      write (6, "(a)") 'Seeding RNG'
     end if
     call RANDOM_SEED(size=n)
     allocate (seed(n))
@@ -61,8 +61,8 @@ contains
     double precision :: r1
     integer :: i, j, k
 
-    if (RANK .eq. 1) then
-      write (6, *) ' Imposing a random phase IC...'
+    if (RANK .eq. 0 .and. ANY(OMEGAALL .ne. 0.0d0)) then
+      write (6, '(a,i3)') "Imposing a random phase IC on FIELD ", field%field_number
     end if
 
     !$OMP parallel do private (i,j,k) collapse(3)
@@ -84,7 +84,7 @@ contains
     integer :: i, j, k
 
     if (RANK .eq. 0) then
-      write (6, *) ' Imposing a random density perturbation...'
+      write (6, *) ' Imposing a random density perturbation on FIELD ', field%field_number
     end if
 
     !$OMP parallel do private (i,j,k) collapse(3)

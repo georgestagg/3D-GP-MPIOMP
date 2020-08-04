@@ -47,6 +47,10 @@ contains
       ALLOCATE (TMPWS(3)%FLUID(FLUIDS))
 
       do f = 1, FLUIDS
+        if (RANK .eq. 0 .and. ANY(OMEGAALL .ne. 0.0d0)) then
+          write (6, '(a,i3,a,f6.3,a,f6.3,a,f6.3)') "FIELD ", f, &
+            " - OMEGAX is: ", OMEGAALL(1, f), ", OMEGAY is: ", OMEGAALL(2, f), ", OMEGAZ is: ", OMEGAALL(3, f)
+        end if
         call allocateCompGrid(WS%FLUID(f))
         call allocateCompGrid(TMPWS(1)%FLUID(f))
         call allocateCompGrid(TMPWS(2)%FLUID(f))

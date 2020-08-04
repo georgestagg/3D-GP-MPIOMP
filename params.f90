@@ -43,6 +43,7 @@ module params
   double precision :: VELY = 0.0d0
   double precision :: VELZ = 0.0d0
   double precision :: OMEGA = 0.0d0
+  double precision, dimension(:, :), ALLOCATABLE :: OMEGAALL
   double precision :: DOMEGADT = 0.000d0
 
   !Dissipation
@@ -98,22 +99,14 @@ contains
     IMPLICIT NONE
     ICRfilename = repeat(" ", 2048) !Clear memory so entire string is blank
     SURFfilename = repeat(" ", 2048)
-    call set_fluid_interactions(1, reshape((/1.0d0/), (/1, 1/)))
     include 'params.in'
     if (FLUIDS == 1) then
+      ALLOCATE (GG(1, 1))
+      GG(1, 1) = 1.0d0
       ALLOCATE (NVORTALL(3, 1))
       NVORTALL(:, 1) = NVORT
+      ALLOCATE (OMEGAALL(3, 1))
+      OMEGAALL(:, 1) = (/OMEGA, 0.0d0, 0.0d0/)
     end if
   END subroutine
-
-  subroutine set_fluid_interactions(N, FG)
-    IMPLICIT NONE
-    integer :: N, stat
-    double precision :: FG(:, :)
-    DEALLOCATE (GG, STAT=stat)
-    ALLOCATE (GG(N, N))
-    GG = FG
-    FLUIDS = N
-  END subroutine
-
 end module
