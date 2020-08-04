@@ -106,7 +106,7 @@ contains
       ALLOCATE (NVORTALL(3, 1))
       NVORTALL(:, 1) = NVORT
       ALLOCATE (OMEGAALL(3, 1))
-      OMEGAALL(:, 1) = (/OMEGA, 0.0d0, 0.0d0/)
+      OMEGAALL(:, 1) = (/0.0d0, 0.0d0, OMEGA/)
     end if
   END subroutine
 end module
