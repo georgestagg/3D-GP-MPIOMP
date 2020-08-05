@@ -26,8 +26,8 @@ module params
   ! 3 - Quasi-periodic GPE
   ! 4 - Quasi-periodic Ginzburg–Landau equations (WIP)
   integer :: RHSType = 1
-  double precision :: harm_osc_C = 2000.0d0
-  double precision :: harm_osc_mu = 25.267d0
+  double precision :: harm_osc_C = 100.0d0
+  double precision :: harm_osc_mu = 10.0d0
   double precision :: ENERV = 0.75d0
   double precision :: NV = 0.75d0
   double precision :: EDD = 0.0d0

@@ -1,5 +1,5 @@
-i=1;
-[gridx,gridy,gridz,psi1,potential] = getWF('/data/ngs54/research/2compsphere',i,'prefix','imag','fnum',1);
+i=3;
+[gridx,gridy,gridz,psi1,potential] = getWF('/data/ngs54/research/2compsphere',i,'prefix','psi','fnum',1);
 %[gridx,gridy,gridz,psi2,potential] = getWF('/data/ngs54/research/2compsphere',i,'prefix','imag','fnum',2);
 [mgx,mgy,mgz] = meshgrid(gridx,gridy,gridz);
 %rx = gridx(end);
@@ -13,14 +13,14 @@ hold on
 plot3d(gridx,gridy,gridz,psi2,'facecolor','blue','level',0.04);
 axis image
 subplot(2,3,2)
-imagesc(squeeze(angle(psi1(:,:,1))))
+imagesc(gridx,gridy,squeeze(angle(psi1(:,:,1))))
 axis image
 subplot(2,3,5)
-imagesc(squeeze(angle(psi2(:,:,1))))
+imagesc(gridx,gridy,squeeze(angle(psi2(:,:,1))))
 axis image
 subplot(2,3,3)
-imagesc(squeeze(abs(psi1(:,:,1))).^2)
+imagesc(gridx,gridy,squeeze(abs(psi1(:,:,1))).^2)
 axis image
 subplot(2,3,6)
-imagesc(squeeze(abs(psi2(:,:,1))).^2)
+imagesc(gridx,gridy,squeeze(abs(psi2(:,:,1))).^2)
 axis image
