@@ -1,5 +1,5 @@
 i=1;
-[~,~,~,psi1] = getWF('/data/ngs54/research/2compsphere',i,'prefix','imag','fnum',1);
+[gridx,gridy,gridz,psi1,potential] = getWF('/data/ngs54/research/2compsphere',i,'prefix','imag','fnum',1);
 %[gridx,gridy,gridz,psi2,potential] = getWF('/data/ngs54/research/2compsphere',i,'prefix','imag','fnum',2);
 [mgx,mgy,mgz] = meshgrid(gridx,gridy,gridz);
 %rx = gridx(end);
