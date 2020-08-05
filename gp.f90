@@ -103,7 +103,7 @@ subroutine simulate(steps, set_rt)
     else if (METHOD == 1) then
       call FFTW_step
     end if
-    if (ABS(DOMEGADT) > 1e-14) then
+    if (rt .eq. 1 .and. ABS(DOMEGADT) > 1e-14) then
       call eulerStepOmega
     end if
     TIME = TIME + dble(DT)

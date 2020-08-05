@@ -99,14 +99,14 @@ contains
     IMPLICIT NONE
     ICRfilename = repeat(" ", 2048) !Clear memory so entire string is blank
     SURFfilename = repeat(" ", 2048)
+    ALLOCATE (OMEGAALL(3, FLUIDS))
+    OMEGAALL = 0.0d0
     include 'params.in'
     if (FLUIDS == 1) then
       ALLOCATE (GG(1, 1))
       GG(1, 1) = 1.0d0
       ALLOCATE (NVORTALL(3, 1))
       NVORTALL(:, 1) = NVORT
-      ALLOCATE (OMEGAALL(3, 1))
-      OMEGAALL(:, 1) = (/0.0d0, 0.0d0, OMEGA/)
     end if
   END subroutine
 end module
