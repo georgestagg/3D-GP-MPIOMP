@@ -328,13 +328,14 @@ contains
 
     local_norm = sum(tgt(sx + NGHOST:ex - NGHOST, sy + NGHOST:ey - NGHOST, sz + NGHOST:ez - NGHOST))*DSPACE*DSPACE*DSPACE
     call MPI_Allreduce(local_norm, total_norm, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_FFTW, IERR)
+    gt(sx:ex, sy:ey, sz:ez) = gt(sx:ex, sy:ey, sz:ez)/sqrt(total_norm)
 
-    tgt(sx + NGHOST:ex - NGHOST, sy + NGHOST:ey - NGHOST, sz + NGHOST:ez - NGHOST) = 0.0d0
-    where (POT < 1.0d0) tgt(sx + NGHOST:ex - NGHOST, sy + NGHOST:ey - NGHOST, sz + NGHOST:ez - NGHOST) = 1.0d0
-
-    local_pot_int = sum(tgt(sx + NGHOST:ex - NGHOST, sy + NGHOST:ey - NGHOST, sz + NGHOST:ez - NGHOST))*DSPACE*DSPACE*DSPACE
-    call MPI_Allreduce(local_pot_int, total_pot_int, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_FFTW, IERR)
-
-    gt(sx:ex, sy:ey, sz:ez) = gt(sx:ex, sy:ey, sz:ez)/sqrt(total_norm)*sqrt(total_pot_int)
+    if (RHSType .ne. 1) then
+      tgt(sx + NGHOST:ex - NGHOST, sy + NGHOST:ey - NGHOST, sz + NGHOST:ez - NGHOST) = 0.0d0
+      where (POT < 1.0d0) tgt(sx + NGHOST:ex - NGHOST, sy + NGHOST:ey - NGHOST, sz + NGHOST:ez - NGHOST) = 1.0d0
+      local_pot_int = sum(tgt(sx + NGHOST:ex - NGHOST, sy + NGHOST:ey - NGHOST, sz + NGHOST:ez - NGHOST))*DSPACE*DSPACE*DSPACE
+      call MPI_Allreduce(local_pot_int, total_pot_int, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_FFTW, IERR)
+      gt(sx:ex, sy:ey, sz:ez) = gt(sx:ex, sy:ey, sz:ez)*sqrt(total_pot_int)
+    end if
   end subroutine
 end module

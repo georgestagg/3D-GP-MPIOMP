@@ -1,26 +1,23 @@
-i=3;
-[gridx,gridy,gridz,psi1,potential] = getWF('/data/ngs54/research/2compsphere',i,'prefix','psi','fnum',1);
-%[gridx,gridy,gridz,psi2,potential] = getWF('/data/ngs54/research/2compsphere',i,'prefix','imag','fnum',2);
+i=1;
+[~,~,~,psi1,~] = getWF('/data/ngs54/research/normtest/2',i,'prefix','imag','fnum',1);
+[gridx,gridy,gridz,psi2,potential] = getWF('/data/ngs54/research/normtest/2',i,'prefix','imag','fnum',2);
 [mgx,mgy,mgz] = meshgrid(gridx,gridy,gridz);
-%rx = gridx(end);
-%psi1(mgx.^2+mgy.^2+mgz.^2 > (rx-0.2).^2) = 1.0;
-%psi2(mgx.^2+mgy.^2+mgz.^2 > (rx-0.2).^2) = 1.0;
 clf
-subplot(1,3,1)
-plot3d(gridx,gridy,gridz,psi1,'facecolor','red','level',0.04);
+subplot(2,3,1)
+plot3d(gridx,gridy,gridz,psi1,'facecolor','red','level',0.02,'facealpha',0.5);
 axis image
-hold on
-plot3d(gridx,gridy,gridz,psi2,'facecolor','blue','level',0.04);
+subplot(2,3,4)
+plot3d(gridx,gridy,gridz,psi2,'facecolor','blue','level',0.02,'facealpha',0.5);
 axis image
 subplot(2,3,2)
-imagesc(gridx,gridy,squeeze(angle(psi1(:,:,1))))
+imagesc(gridx,gridy,squeeze(angle(psi1(:,:,end/2))))
 axis image
 subplot(2,3,5)
-imagesc(gridx,gridy,squeeze(angle(psi2(:,:,1))))
+imagesc(gridx,gridy,squeeze(angle(psi2(:,:,end/2))))
 axis image
 subplot(2,3,3)
-imagesc(gridx,gridy,squeeze(abs(psi1(:,:,1))).^2)
+imagesc(gridx,gridy,squeeze(abs(psi1(:,:,end/2))).^2)
 axis image
 subplot(2,3,6)
-imagesc(gridx,gridy,squeeze(abs(psi2(:,:,1))).^2)
+imagesc(gridx,gridy,squeeze(abs(psi2(:,:,end/2))).^2)
 axis image
