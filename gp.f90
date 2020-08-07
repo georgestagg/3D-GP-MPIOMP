@@ -15,7 +15,7 @@ program gp
     write (6, '(a,i5,a,i5,a,i5,a)') "NX: ", NX, ", NY: ", NY, ", NZ: ", NZ, "."
     write (6, '(a,e10.3,a,e10.3,a)') "DSPACE: ", DSPACE, ", DTSIZE: ", DTSIZE, "."
     write (6, '(a,i8,a,i8,a)') "DUMPWF: ", DUMPWF, ", DUMPUTIL: ", DUMPUTIL, "."
-    write (6, '(a,i3,a,1000f8.3)') "Simulating ", FLUIDS, " fluids with interaction matrix: ", GG
+    write (6, '(a,i3,a,1000f10.3)') "Simulating ", FLUIDS, " fluids with interaction matrix: ", GG
     write (6, '(a)') "---------------------------------------------------"
     write (6, '(a)') "Initialising system..."
   end if

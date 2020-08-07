@@ -143,10 +143,9 @@ contains
       do k = sz + NGHOST, ez - NGHOST
         do j = sy + NGHOST, ey - NGHOST
           do i = sx + NGHOST, ex - NGHOST
-            ws_out%FLUID(f)%GRID(i, j, k) = -0.5d0*laplacian(ws_in%FLUID(f), i, j, k) &
-                                            + harm_osc_C*ws_in%FLUID(f)%GRID(i, j, k)*ws_in%FLUID(f)%GRID(i, j, k) &
-                                            *CONJG(ws_in%FLUID(f)%GRID(i, j, k)) + POT(i, j, k)*ws_in%FLUID(f)%GRID(i, j, k) &
-                                            - harm_osc_mu*ws_in%FLUID(f)%GRID(i, j, k)
+            ws_out%FLUID(f)%GRID(i, j, k) = -0.5d0/MASS(f)*laplacian(ws_in%FLUID(f), i, j, k) &
+                                            + MASS(f)*POT(i, j, k)*ws_in%FLUID(f)%GRID(i, j, k) &
+                                            - MASS(f)*harm_osc_mu*ws_in%FLUID(f)%GRID(i, j, k)
             if (ANY(OMEGAALL .ne. 0.0d0)) then
               ws_out%FLUID(f)%GRID(i, j, k) = ws_out%FLUID(f)%GRID(i, j, k) &
                                               - OMEGAALL(1, f)*EYE*(GY(j)*ddz(ws_in%FLUID(f), i, j, k) &
@@ -160,6 +159,19 @@ contains
         end do
       end do
       !$OMP end parallel do
+
+      do p = 1, FLUIDS
+        !$OMP parallel do private (i,j,k) collapse(3)
+        do k = sz + NGHOST, ez - NGHOST
+          do j = sy + NGHOST, ey - NGHOST
+            do i = sx + NGHOST, ex - NGHOST
+              ws_out%FLUID(f)%GRID(i, j, k) = ws_out%FLUID(f)%GRID(i, j, k) + harm_osc_C*GG(f, p)*ws_in%FLUID(p)%GRID(i, j, k) &
+                                              *CONJG(ws_in%FLUID(p)%GRID(i, j, k))*ws_in%FLUID(f)%GRID(i, j, k)
+            end do
+          end do
+        end do
+        !$OMP end parallel do
+      end do
     end if
     if (RHSType .eq. 3) then
       TMPWS(4)%FLUID(1)%field_number = f

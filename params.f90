@@ -37,6 +37,7 @@ module params
   !Multi-component parameters
   integer :: FLUIDS = 1
   double precision, dimension(:, :), ALLOCATABLE :: GG
+  double precision, dimension(:), ALLOCATABLE :: MASS
 
   !Linearly/Rotating moving frame
   double precision :: VELX = 0.0d0
@@ -99,13 +100,23 @@ contains
     IMPLICIT NONE
     ICRfilename = repeat(" ", 2048) !Clear memory so entire string is blank
     SURFfilename = repeat(" ", 2048)
-    ALLOCATE (OMEGAALL(3, FLUIDS))
-    OMEGAALL = 0.0d0
     include 'params.in'
-    if (FLUIDS == 1) then
-      ALLOCATE (GG(1, 1))
-      GG(1, 1) = 1.0d0
-      ALLOCATE (NVORTALL(3, 1))
+    if (.not. ALLOCATED(MASS)) then
+      allocate (MASS(FLUIDS))
+      MASS = 1.0d0
+    end if
+    if (.not. ALLOCATED(GG)) then
+      allocate (GG(FLUIDS, FLUIDS))
+      GG = 1.0d0
+    end if
+    if (.not. ALLOCATED(OMEGAALL)) then
+      allocate (OMEGAALL(3, FLUIDS))
+      OMEGAALL = 0.0d0
+      OMEGAALL(:, 1) = (/0.0d0, 0.0d0, OMEGA/)
+    end if
+    if (.not. ALLOCATED(NVORTALL)) then
+      allocate (NVORTALL(3, FLUIDS))
+      NVORTALL = 0.0d0
       NVORTALL(:, 1) = NVORT
     end if
   END subroutine

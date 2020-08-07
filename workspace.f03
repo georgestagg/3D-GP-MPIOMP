@@ -47,6 +47,8 @@ contains
       ALLOCATE (TMPWS(3)%FLUID(FLUIDS))
 
       do f = 1, FLUIDS
+        if (RANK .eq. 0 .and. RHSType .eq. 1) write (6, '(a,i3,a,f6.3,a,f6.3,a,f6.3)') "FIELD ", f, &
+          " - MASS is: ", MASS(f)
         if (RANK .eq. 0 .and. ANY(OMEGAALL .ne. 0.0d0)) then
           write (6, '(a,i3,a,f6.3,a,f6.3,a,f6.3)') "FIELD ", f, &
             " - OMEGAX is: ", OMEGAALL(1, f), ", OMEGAY is: ", OMEGAALL(2, f), ", OMEGAZ is: ", OMEGAALL(3, f)
